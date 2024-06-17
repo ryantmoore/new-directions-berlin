@@ -1,2 +1,3 @@
-# new-directions-berlin
-Materials for Workshop "New Directions in Causal Inference", DYNAMICS Research Group, Berlin, Germany
+# New Directions in Causal Inference
+
+Materials for Workshop at the DYNAMICS Research Group, Berlin, Germany.

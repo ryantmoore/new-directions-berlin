@@ -1,0 +1,99 @@
+---
+title: "New Directions in Causal Inference"
+author: 
+  - Ryan T. Moore1^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
+format: 
+  pdf:
+    number-sections: true
+    toc: false
+    geometry: 
+      - top=3cm
+    include-in-header: 
+    - text: |
+        \usepackage{bibentry}
+        \newcommand{\bibverse}[1]{\begin{verse} \bibentry{#1}. \end{verse}}
+date: 2024-06-12
+date-format: iso
+documentclass: article
+bibliography: main.bib
+---
+
+```{r setup}
+#| echo: false
+#| message: false
+
+library(kableExtra)
+library(tidyverse)
+```
+
+# Course Information
+
+New Directions in Causal Inference   
+DYNAMICS Research Group  
+15 July - 17 July 2024  
+Monday-Friday 10:00-15:00 CEST (UTC+02:00)  
+Luisenstraße 56, Raum 220
+
+# Instructor Information
+
+Ryan T. Moore, Ph.D. 
+Associate Professor of Government  
+American University  
+Homepage: \url{http://www.ryantmoore.org}  
+Email: `rtm` (at) `american` (dot) `edu`  
+
+# Course Description {#sec-description}
+
+# Intellectual Property
+
+Course content is the intellectual property of the instructor or student who created it, and may not be recorded or distributed without consent.
+
+# Calendar
+
+## Day 1: Monday, 15 July
+
+* 13:00-15:00: Introductions. Content.
+* 15:00-16:00: Break
+* 16:00-18:00: Lab
+
+
+## Day 2: Tuesday, 16 July
+
+* 10:00-12:00: Sensitivity analysis.
+* 12:00-13:00: Break
+* 13:00-15:00: Lab
+
+Rosenbaum
+
+@keele22
+
+@imakeeyam10
+
+## Day 3: Wednesday, 17 July
+
+* 10:00-12:00: Modern difference-in-difference designs. 
+* 12:00-13:00: Break
+* 13:00-15:00: Lab
+
+@herrob24
+
+<!-- \nobibliography* -->
+<!-- \bibverse{gergre12} -->
+
+@calsan21
+
+
+<!-- | Col1 | Col2 | Col3 | -->
+<!-- |------|------|------| -->
+<!-- | A    | B    | C    | -->
+<!-- | E    | F    | G    | -->
+<!-- | A    | G    | G    | -->
+
+<!-- : My Caption {#tbl-letters} -->
+
+<!-- See @tbl-letters. -->
+
+
+\clearpage
+
+# References

@@ -1,0 +1,49 @@
+---
+title: "New Directions in Causal Inference"
+subtitle: Course Outline
+author: 
+  - Ryan T. Moore^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
+format: 
+  pdf:
+    number-sections: true
+    toc: false
+    geometry: 
+      - top=3cm
+    include-in-header: 
+    - text: |
+        \usepackage{bibentry}
+        \newcommand{\bibverse}[1]{\begin{verse} \bibentry{#1}. \end{verse}}
+date: 2024-06-17
+date-format: iso
+documentclass: article
+bibliography: main.bib
+---
+
+```{r setup}
+#| echo: false
+#| message: false
+
+library(kableExtra)
+library(tidyverse)
+```
+
+
+# Data Science Methods in Causal Inference
+
+- Why (and how) do we build models?
+- Prediction versus inference
+- Causal forests for heterogeneous treatment effects
+- Double-LASSO methods for variable selection
+
+# Sensitivity Analyses
+
+- Sensitivity to model specification
+- Sensitivity to an unidentifiable parameter
+- Sensitivity to unobserved confounders
+
+# Modern Difference-in-Differences
+
+- Canonical difference-in-differences
+- The stepped wedge design
+- The Calloway-Sant'Anna approach to multiple time periods
+
