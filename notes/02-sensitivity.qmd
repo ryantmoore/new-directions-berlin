@@ -1,0 +1,67 @@
+---
+title: | 
+    | Sensitivity Analyses
+author: "Ryan T. Moore"
+date: 2024-07-16
+date-format: iso
+execute: 
+  echo: true
+format: 
+  beamer:
+    fonttheme: serif
+    include-in-header:
+      - text: | 
+          \usepackage{wasysym} 
+      - file: zzz_beamer_header.tex
+    section-titles: true
+    toc: true
+institute:
+  - American University
+  - The Lab @ DC
+bibliography: "main.bib"
+---
+
+```{r}
+#| label: setup
+#| echo: false
+#| message: false
+#| results: false
+#| warning: false
+
+library(here)
+library(tidyverse)
+```
+
+# Section Title Page
+
+## Slide Title
+
+Material.
+
+<!-- Include a PDF/PNG/... -->
+<!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
+
+<!-- Include PDFs in columns -->
+<!-- \includegraphics[width=2in]{figs/myfig1.pdf} -->
+<!-- \includegraphics[width=2in]{figs/myfig2.pdf} -->
+
+***
+
+\huge
+
+\begin{center}
+Thanks! 
+\end{center}
+
+\vspace{5mm}
+
+\large
+
+\center
+`rtm@american.edu`  
+`www.ryantmoore.org`  
+
+## References {.allowframebreaks}
+
+\footnotesize
+
