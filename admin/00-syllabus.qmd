@@ -1,18 +1,18 @@
 ---
 title: "New Directions in Causal Inference"
 author: 
-  - Ryan T. Moore1^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
+  - Ryan T. Moore^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
 format: 
   pdf:
-    number-sections: true
+    number-sections: false
     toc: false
     geometry: 
       - top=3cm
     include-in-header: 
-    - text: |
-        \usepackage{bibentry}
-        \newcommand{\bibverse}[1]{\begin{verse} \bibentry{#1}. \end{verse}}
-date: 2024-06-12
+      - text: |
+          \usepackage{bibentry}
+          \newcommand{\bibverse}[1]{\begin{verse} \bibentry{#1}. \end{verse}}
+date: today
 date-format: iso
 documentclass: article
 bibliography: main.bib
@@ -36,13 +36,19 @@ Luisenstraße 56, Raum 220
 
 # Instructor Information
 
-Ryan T. Moore, Ph.D. 
+Ryan T. Moore, Ph.D.  
 Associate Professor of Government  
 American University  
 Homepage: \url{http://www.ryantmoore.org}  
 Email: `rtm` (at) `american` (dot) `edu`  
 
 # Course Description {#sec-description}
+
+This workshop is designed to introduce some recent developments in causal inference, selected in consultation with DYNAMICS Ph.D. students. The first module exposes students to techniques from data science and statistical learning and their application in causal inference problems. The second module considers the concept of sensitivity from several different perspectives. The third module introduces important new approaches to and understandings about the well-known difference-in-differences design.
+
+# Prerequisites 
+
+Students should be familiar with the rudiments of the potential outcomes model for causal inference, as well as topics in introductory statistics such as null hypothesis significance tests, confidence intervals, and linear regression. Students should be familiar with analyzing data with code, preferably in R or Python. It will be helpful if students have background in techniques for causal inference from experiments and observational data, but we will strive to build ideas from the ground up. Students without familiarity or experience in these topics are also welcome.
 
 # Intellectual Property
 
@@ -52,35 +58,62 @@ Course content is the intellectual property of the instructor or student who cre
 
 ## Day 1: Monday, 15 July
 
-* 13:00-15:00: Introductions. Content.
-* 15:00-16:00: Break
-* 16:00-18:00: Lab
+Data science methods in causal inference
 
+* 13:00-14:00: Introductions. Building models. Social science and data science goals. K-nearest neighbors. Decision trees. Random forests. Cross-validation.
+* 14:00-15:00: Homogeneous and heterogeneous effects. The CATE. Causal forests.
+* 15:00-16:00: Break
+* 16:00-17:00: Variable selection. LASSO methods for causal inference.
+* 17:00-18:00: Lab exercise
+
+### Resources
+
+- @breiman01-two
+- @herhsuhea19
+- @jamwithas21  
+- @wagath18
+- @zheyin23
+- @athwag19  
+- @herrob24
 
 ## Day 2: Tuesday, 16 July
 
-* 10:00-12:00: Sensitivity analysis.
+Sensitivity analyses
+
+* 10:00-11:00: Sensitivity to model specification. All possible regressions. Matching as pre-processing.
+* 11:00-12:00: Sensitivity to an unidentifiable parameter. Mediation.
 * 12:00-13:00: Break
-* 13:00-15:00: Lab
+* 13:00-14:00: Sensitivity to unobserved confounders
+* 14:00-15:00: Lab exercise
 
-Rosenbaum
+### Resources
 
-@keele22
-
-@imakeeyam10
+- @hebbali24
+- @hoimakin07
+- @blastr22  
+- @imakeeyam10  
+- @keele22
+- @rosenbaum20
 
 ## Day 3: Wednesday, 17 July
 
-* 10:00-12:00: Modern difference-in-difference designs. 
-* 12:00-13:00: Break
-* 13:00-15:00: Lab
+Modern difference-in-difference designs
 
-@herrob24
+* 10:00-11:00: Canonical difference-in-difference (DiD) designs. The Calloway-Sant'Anna approach to multiple time periods.
+* 11:00-12:00: Models and aggregations for DiD
+* 12:00-13:00: Break
+* 13:00-14:00: Extra time, review, questions
+* 14:00-15:00: Lab exercise
+
+### Resources
 
 <!-- \nobibliography* -->
 <!-- \bibverse{gergre12} -->
 
-@calsan21
+- @carkre94
+- @calsan21
+- @goodman21
+
 
 
 <!-- | Col1 | Col2 | Col3 | -->
