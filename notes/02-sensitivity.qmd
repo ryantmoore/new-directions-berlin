@@ -10,8 +10,9 @@ format:
   beamer:
     fonttheme: serif
     include-in-header:
-      - text: | 
-          \usepackage{wasysym} 
+      - text: |
+          \usepackage{wasysym}
+          \newcommand{\independent}{\perp\mkern-9.5mu\perp}
     section-titles: true
     toc: true
 institute:
@@ -27,7 +28,10 @@ bibliography: "../admin/main.bib"
 #| results: false
 #| warning: false
 
+library(ggdag)
 library(here)
+library(knitr)
+library(scales)
 library(tidyverse)
 ```
 
@@ -71,6 +75,7 @@ data(social)
 
 social <- social |> mutate(
   age = 2006 - yearofbirth,
+  age_c = age - mean(age),
   messages = fct_relevel(messages, "Control")
 )
 
@@ -82,7 +87,7 @@ head(social)
 ```{r}
 #| cache: true
 
-lm_out <- lm(primary2006 ~ messages + sex + age +
+lm_out <- lm(primary2006 ~ messages + sex + age_c +
                primary2004 + hhsize, data = social)
 
 all_lm_social <- ols_step_all_possible(lm_out)$result
@@ -115,6 +120,16 @@ ggplot(coefs_neighbors, aes(beta)) + geom_histogram() +
 summary(coefs_neighbors$beta)
 ```
 
+## All Coefficients
+
+```{r}
+#| label: fig-coefs-all-neighbors
+#| echo: false
+
+ggplot(all_lm_social_coefs, aes(x = beta)) + geom_density() + 
+  facet_wrap(~ predictor, scales = "free") +
+  scale_x_continuous(labels = label_number(0.001))
+```
 
 ## Matching as Preprocessing
 
@@ -171,7 +186,533 @@ Different distributions; non-overlap
 
 # Sensitivity to an Unobserved Covariates
 
-## "Rosenbaum sensitivity" analysis
+## Confounding in Observational Studies
+
+```{r warning = FALSE, echo = FALSE}
+coords <- list(x = c(T = 0, X = 1, Y = 2), 
+               y = c(T = 1, X = 0, Y = 1.1))
+dagify(Y ~ T, T ~ X, Y ~ X, coords = coords) |> 
+  ggdag_classic(size = 30) + theme_dag_blank()
+```
+
+***
+
+```{r dagUnobs, warning=FALSE, echo=FALSE}
+coords <- list(x = c(T = 0, X = 1, Y = 2, U = 0.1), 
+               y = c(T = 1, X = 0, Y = 1.1, U = 0.1))
+dagify(Y ~ T + U, T ~ X + U, Y ~ X, coords = coords, latent = "U") %>% 
+  ggdag_classic(size = 30) + theme_dag_blank()
+```
+
+## Addressing Confounding
+
+\Large 
+
+To break confounding, 
+
+- can't break $X \to Y$
+- break $X \to T$
+- I.e., make $X \independent T$
+- But this doesn't address $U \to T$ (or $U \to Y$).
+
+\pause 
+
+(Of course, if no causal effect of $U \to Y$, no problem.)
+
+
+## Hidden Bias
+
+\large 
+
+Where there is $U \to T$ and $U \to Y$, there is _hidden bias_.  
+
+\pause 
+
+Formally, $i$ and $j$ appear similar: $$\mathbf{x}_i = \mathbf{x}_j$$ 
+
+\pause 
+
+but are different in prop score: $$\pi_i \neq \pi_j$$ 
+
+
+## Example
+
+\large
+
+We are interested in the effect of phone calls on turnout.  
+
+\pause 
+
+Two voters look identical on observed predictors of whether called (that might affect 
+turnout, too): age, education, income, party ID.  
+
+\pause 
+
+However, **different** probabilities of being called, due to unobserved confounder, sociability.
+
+\pause 
+
+Sociability affects whether called (know more people) and turnout.
+
+\pause 
+
+Sensitivity: how strong must sociability be to invalidate inference about phone calls?
+
+# Odds
+
+## Odds
+
+The _odds_ of $A_1$ vs. $A_2$ is $$A_1:A_2 = \frac{p(A_1)}{p(A_2)}$$ \pause
+
+Odds often expressed as 
+
+- integers: $3:2$  \pause Know $p(\Omega)=1$, so 
+$$3:2 = \frac{.6}{.4}$$  \pause
+- base $=1$: $1.5:1$.  \pause Know $p(\Omega)=1$, so 
+$$1.5:1 = \frac{.6}{.4}$$ 
+
+## Odds Ratios
+
+An _odds ratio_ is \pause a ratio of odds: \pause 
+
+$$OR = \frac{\left(\frac{p(A_1)}{p(A_2)} \right)}{\left(\frac{p(A_3)}{p(A_4)}\right)}$$ 
+
+\pause 
+
+The strength, and weakness, is comparing changes from different base rates.  
+
+\pause 
+
+\vspace{5mm} From base odds of $1:1$, say a change of condition produces odds ratio of 3. \pause 
+$$\frac{\frac{.03}{.01}}{\frac{.01}{.01}} \pause =
+\frac{\frac{.06}{.02}}{\frac{.02}{.02}} \pause = 
+\frac{\frac{.9}{.3}}{\frac{.3}{.3}} \pause = 
+\frac{\frac{.9}{.3}}{\frac{.9}{.9}} \pause = \ldots$$
+
+
+## Application: Measuring Group Differences (JP Scanlon)
+
+\begin{center}
+\begin{tabular}{ccccccc}
+& \multicolumn{3}{c}{\% Below Pov Line} & \multicolumn{3}{c}{\% Above
+  Pov Line} \\
+& B & W & $\frac{B}{W}$ & B & W & $\frac{B}{W}$ \\ \hline
+$t_1$ & 90 & 80 & 1.1 & 10 & 20 & 0.5 \\ \pause
+$t_2$ & 15 & 5 & 3.0 & 85 & 95 & 0.89
+\end{tabular}
+\end{center} \pause
+
+\pause 
+
+>- At $t_1$: More blacks below, whites above PovLine
+>- At $t_2$: are things getting better or worse for Blacks relative to Whites?
+
+\pause 
+
+Clearly, worse (odds of below pov line):  
+
+Odds Ratios: $\frac{1.1}{.5} = 2.2$, $\frac{3}{.89} = 3.4$
+
+\pause 
+
+Clearly, no change:    
+
+Absolute Differences: 10, 10, 10, 10  
+
+\pause 
+
+Clearly, huge absolute improvements.
+
+## Application: Measuring Group Differences (JP Scanlon)
+
+>- Key: it's not clear whether relative disparities getting better/worse/neither by below/above measures.
+>- (Easy to produce examples of OR's same and AbsDiffs slightly diff.)
+>- (Diffs betwn groups real, importnt, but how we meas. changes is tricky)
+
+	
+## King's Conjecture
+
+<!-- (Unproven; not proven false) -->
+
+\begin{center}
+\includegraphics[angle=0, width=4.5in]{figs/02-gkOR-tweet.jpg}
+
+\vspace{15mm}
+17 October 2012
+
+\end{center}
+
+
+# Rosenbaum's Model
+
+## Modeling Hidden Bias
+
+\large
+
+Odds of treatment for $i$ and $j$:
+
+$$\frac{\pi_i}{1 - \pi_i}, \frac{\pi_j}{1 - \pi_j}$$
+
+\pause
+
+OR of $i$ versus $j$:
+
+\begin{eqnarray*}
+OR & = & \frac{\pi_i}{1 - \pi_i} \div \frac{\pi_j}{1 - \pi_j} \\
+& = & \frac{\pi_i (1 - \pi_j)}{\pi_j (1 - \pi_i)}
+\end{eqnarray*}
+
+
+## Modeling Hidden Bias
+
+\large
+
+Let $\Gamma$ be upper bound on OR of treatment.
+
+$$\frac{1}{\Gamma} \leq \frac{\pi_i (1 - \pi_j)}{\pi_j (1 - \pi_i)} \leq \Gamma \qquad \forall i, j \text{ s.t. } \mathbf{x}_i = \mathbf{x}_j$$
+
+\pause
+
+By what factor does the odds of treatment differ?  (No more than $\Gamma$)
+
+## Modeling Hidden Bias
+
+@rosenbaum20 shows that this is same as
+
+\begin{eqnarray*}
+\log \left(\frac{\pi_i}{1-\pi_i} \right) & = & \kappa(\mathbf{x}_i) + \gamma u_i \\
+\log \left(\frac{\pi_j}{1-\pi_j} \right) & = & \kappa(\mathbf{x}_j) + \gamma u_j
+\end{eqnarray*}
+
+s.t. $0 \leq u_i \leq 1$.
+
+\pause
+
+Interpretation: first rewrite
+
+$$\log \left(\frac{\pi_j}{1-\pi_j} \right) = \kappa(\mathbf{x}_i) + \gamma u_j$$
+
+***
+
+Exponentiate:
+
+\begin{eqnarray*}
+\left(\frac{\pi_i}{1-\pi_i} \right) & = & e^{\kappa(\mathbf{x}_i) + \gamma u_i} \\
+\left(\frac{\pi_j}{1-\pi_j} \right) & = & e^{\kappa(\mathbf{x}_i) + \gamma u_j} \\
+\end{eqnarray*}
+
+\pause
+
+Calculate OR:
+
+\begin{eqnarray*}
+OR & = & \frac{\pi_i (1 - \pi_j)}{\pi_j (1 - \pi_i)} \\
+& = & \frac{e^{\kappa(\mathbf{x}_i) + \gamma u_i} }{ e^{\kappa(\mathbf{x}_i) + \gamma u_j} } \\
+& = & e^{\left(\kappa(\mathbf{x}_i) + \gamma u_i \right) - \left( \kappa(\mathbf{x}_i) + \gamma u_j \right) } \\
+& = & e^{\left(\gamma u_i - \gamma u_j \right) } \\
+& = & e^{\gamma \left( u_i - u_j \right) }
+\end{eqnarray*}
+
+## Interpreting $\Gamma$
+
+\large
+
+$OR = e^{\gamma \left( u_i - u_j \right) }$
+
+\pause
+
+Log odds differ by factor of $\gamma$ times diff in unobs confounder.
+
+\pause
+
+Shows $\Gamma = e^{\gamma}$.
+
+
+***
+
+<!-- What is the test here?  RTM  -->
+
+![Here](figs/02-sens-tab1.png)
+
+\pause
+
+\vspace{5mm}
+
+- Groups: smokers/nonsmokers
+- Outcome: lung cancer
+- Something must increase smoking by $6 \times$ to change inference.
+- If exists, maybe it's that factor, not smoking directly.
+
+(Bias from $U \to T$; effectively, $U \to Y$ nearly perfect.)
+
+***
+
+<!-- | $\Gamma$ | Minimum       | Maximum       | -->
+<!-- |--------|:--------:|:--------:| -->
+<!-- | 1        | $\leq 0.0001$ | $\leq 0.0001$ | -->
+<!-- | 2        | $\leq 0.0001$ |    0.0018     | -->
+<!-- | 3        | $\leq 0.0001$ |    0.0136     | -->
+<!-- | 4        | $\leq 0.0001$ |    0.0388     | -->
+<!-- | 4.25     | $\leq 0.0001$ |    0.0468     | -->
+<!-- | 5        | $\leq 0.0001$ |    0.0740     | -->
+
+\begin{table}[ht]
+    \centering
+    \caption{Example Table}
+    \begin{tabular}{c|c|c}
+    \hline
+    $\Gamma$ & Minimum & Maximum \\
+    \hline
+    1        & $\leq 0.0001$ & $\leq 0.0001$ \\
+    2        & $\leq 0.0001$ & 0.0018 \\
+    3        & $\leq 0.0001$ & 0.0136 \\
+    4        & $\leq 0.0001$ & 0.0388 \\
+    4.25     & $\leq 0.0001$ & 0.0468 \\
+    5        & $\leq 0.0001$ & 0.0740 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+\vspace{5mm}
+
+Table 4.2: Signed-Rank Statistic $p$-value Sensitivity for Lead in Children's Blood
+
+- Groups: parents occupationally exposed/unexposed
+- Outcome: children's levels
+- Something must increase parents' exposure by $5 \times$ to change inference.
+- If exists, maybe it's that, not parental exposure directly.
+
+\pause
+
+(one-sided)
+
+
+***
+
+<!-- | $\Gamma$ | Minimum | Maximum | -->
+<!-- | -------- | ------- | ------- | -->
+<!-- | 1        | 15      | 15      | -->
+<!-- | 2        | 10.25   | 19.5    | -->
+<!-- | 3        | 8       | 23      | -->
+<!-- | 4        | 6.5     | 25      | -->
+<!-- | 5        | 5       | 26.5    | -->
+
+\begin{table}[ht]
+    \centering
+    \caption{Example Table}
+    \begin{tabular}{c|c|c}
+    \hline
+    $\Gamma$ & Minimum & Maximum \\
+    \hline
+    1        & 15      & 15      \\
+    2        & 10.25   & 19.5    \\
+    3        & 8       & 23      \\
+    4        & 6.5     & 25      \\
+    5        & 5       & 26.5    \\
+    \hline
+    \end{tabular}
+\end{table}
+
+
+\vspace{5mm}
+
+Table 4.3: Point Estimate Sensitivity for Lead in Children's Blood
+
+\pause
+
+- HL point estimate: 15
+(median of all $m \times n$ possible matched pairs)
+- With confounding, wider range of possible effects.
+
+
+
+***
+
+<!-- | $\Gamma$ | 95% CI       | -->
+<!-- | :------: | :----------: | -->
+<!-- | 1        | (9.5, 20.5)  | -->
+<!-- | 2        | (4.5, 27.5)  | -->
+<!-- | 3        | (1.0, 32.0)  | -->
+<!-- | 4        | (-1.0, 36.5) | -->
+<!-- | 5        | (-3.0, 41.5) | -->
+
+\begin{table}[ht]
+    \centering
+    \caption{Example Table with 95\% Confidence Intervals}
+    \begin{tabular}{c|c}
+    \hline
+    $\Gamma$ & 95\% CI \\
+    \hline
+    1        & (9.5, 20.5)  \\
+    2        & (4.5, 27.5)  \\
+    3        & (1.0, 32.0)  \\
+    4        & (-1.0, 36.5) \\
+    5        & (-3.0, 41.5) \\
+    \hline
+    \end{tabular}
+\end{table}
+
+\vspace{5mm}
+
+Table 4.4: Confidence Interval Sensitivity for Lead in Children's Blood
+
+\pause
+
+- Inverted NHST CI's
+- If something increases parental exposure by $4 \times$, negative
+estimates of parents on children are reasonable.
+
+(two-sided)
+
+
+<!-- # Implementation -->
+
+## Implementation
+
+\Large
+
+Packages
+
+<!-- - @framarduo13: `konfound` -->
+<!-- - @keele15: `rbounds` -->
+- `sensitivitymw`
+- `sensitivitymv`
+
+## Example
+
+```{r}
+anes <- read_csv("../data/anes_pilot_2016.csv")
+dim(anes)
+
+anes <- anes |> mutate(age = 2016 - birthyr,
+                       pid_rep = as.numeric(pid3 == 3),
+                       pid_dem = as.numeric(pid3 == 1))
+```
+
+***
+
+```{r}
+lm_out <- lm(turnout12 ~ pid_rep, data = anes)
+summary(lm_out)
+```
+
+
+***
+
+```{r warning = FALSE, results = 'hide'}
+#| echo: false
+#| eval: true
+
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+```
+
+```{r warning = FALSE, message=FALSE, linewidth=60, eval=FALSE}
+library(konfound)
+konfound(lm_out, pid_rep)
+```
+
+\pause
+
+
+```{r warning = FALSE, message=FALSE, linewidth=60, echo=FALSE}
+library(konfound)
+konfound(lm_out, pid_rep)
+```
+
+
+***
+
+```{r warning = FALSE}
+lm_out <- lm(turnout12 ~ pid_rep + age, data = anes)
+summary(lm_out)
+```
+
+***
+
+```{r warning = FALSE, message=FALSE, linewidth=60}
+konfound(lm_out, pid_rep)
+```
+
+***
+
+```{r warning = FALSE}
+cor(anes[,c("pid_rep", "turnout12", "econnow")])
+```
+
+***
+
+```{r warning = FALSE}
+lm_out <- lm(turnout12 ~ pid_rep + age + econnow, data = anes)
+summary(lm_out)
+```
+
+***
+
+```{r warning = FALSE, message=FALSE, linewidth=60}
+konfound(lm_out, pid_rep)
+```
+
+
+## Implementation in `rbounds`
+
+\large
+
+```{r warning = FALSE, message=FALSE}
+library(Matching)
+data(GerberGreenImai)
+
+# Estimate Propensity Score
+pscore.glm <- glm(PHN.C1 ~ PERSONS + VOTE96.1 +
+                    NEW + MAJORPTY + AGE + WARD +
+                    PERSONS:VOTE96.1 + PERSONS:NEW +
+                    AGE2, family = binomial(logit),
+                  data = GerberGreenImai)
+```
+
+***
+
+```{r warning = FALSE}
+hist(pscore.glm$fitted)
+```
+
+
+## Implementation in `rbounds`
+
+```{r warning = FALSE}
+# Match - without replacement
+m.obj <- Match(Y = GerberGreenImai$VOTED98,
+               Tr = GerberGreenImai$PHN.C1,
+               X = fitted(pscore.glm), M = 1, replace = FALSE)
+
+summary(m.obj)
+```
+
+
+## Implementation in `rbounds`
+
+```{r}
+#| eval: true
+library(rbounds)
+
+# Sensitivity Test
+# binarysens(m.obj, Gamma = 2, GammaInc = .1)
+```
+
+## Implementation in `rbounds`
+
+```{r}
+#hlsens(m.obj, Gamma = 5, GammaInc = 1)
+```
 
 
 ***
@@ -186,9 +727,11 @@ Thanks!
 
 \large
 
-\center
-`rtm@american.edu`  
-`www.ryantmoore.org`  
+\begin{center}
+\texttt{rtm@american.edu}  \\
+\texttt{www.ryantmoore.org}  
+\end{center}
+
 
 ## References {.allowframebreaks}
 
