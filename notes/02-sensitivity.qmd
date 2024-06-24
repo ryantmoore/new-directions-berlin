@@ -12,13 +12,12 @@ format:
     include-in-header:
       - text: | 
           \usepackage{wasysym} 
-      - file: zzz_beamer_header.tex
     section-titles: true
     toc: true
 institute:
   - American University
   - The Lab @ DC
-bibliography: "main.bib"
+bibliography: "../admin/main.bib"
 ---
 
 ```{r}
@@ -32,11 +31,9 @@ library(here)
 library(tidyverse)
 ```
 
-# Section Title Page
+# Sensitivity
 
-## Slide Title
-
-Material.
+## What is "sensitivity"?
 
 <!-- Include a PDF/PNG/... -->
 <!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
@@ -44,6 +41,138 @@ Material.
 <!-- Include PDFs in columns -->
 <!-- \includegraphics[width=2in]{figs/myfig1.pdf} -->
 <!-- \includegraphics[width=2in]{figs/myfig2.pdf} -->
+
+# Sensitivity to Model Specification
+
+## Should we trust our model?
+
+## Estimating all possible regressions
+
+Idea
+
+## Example 1
+
+@moopowree13
+
+## Implementation
+
+@hebbali24
+
+```{r}
+library(olsrr)
+```
+
+
+## Example 2
+
+```{r}
+library(qss)
+data(social)
+
+social <- social |> mutate(
+  age = 2006 - yearofbirth,
+  messages = fct_relevel(messages, "Control")
+)
+
+head(social)
+```
+
+## Example 2
+
+```{r}
+#| cache: true
+
+lm_out <- lm(primary2006 ~ messages + sex + age +
+               primary2004 + hhsize, data = social)
+
+all_lm_social <- ols_step_all_possible(lm_out)$result
+
+```
+
+## Example 2
+
+```{r}
+all_lm_social_coefs <- ols_step_all_possible_betas(lm_out)
+
+all_lm_social_coefs
+```
+
+## Example 2
+
+```{r fig.height=5}
+#| label: fig-coefs-neighbors
+#| echo: false
+#| fig-cap: "Coefficients from All Possible Regressions"
+
+coefs_neighbors <- all_lm_social_coefs |> filter(predictor == "messagesNeighbors")
+
+ggplot(coefs_neighbors, aes(beta)) + geom_histogram() + 
+  labs(x = "Coefficient on 'Neighbors' Message")
+```
+
+```{r}
+#| echo: false
+summary(coefs_neighbors$beta)
+```
+
+
+## Matching as Preprocessing
+
+\large 
+
+- minimize effects of model-based adjustment (subclassify, match)
+
+"model-based adjustments \ldots will give basically the same point estimates"
+
+\pause 
+
+What does this mean?
+
+## @hoimakin07
+
+"Matching as Nonparametric Preprocessing for Reducing Model Dependence in Parametric Causal Inference"
+
+![Here](figs/02-hiks-model-dep.png)
+
+
+
+***
+
+![Here](figs/02-hiks-fda.png)
+
+## How to Identify Problem?
+
+Different distributions; non-overlap
+
+![Here](figs/02-hiks-qq-candviz.png)
+
+***
+
+![Here](figs/02-hiks-candviz.png)
+
+
+## Paradox of Regression for causal inference?
+
+\large 
+
+- If diffs large, regression not enough, very sensitive
+
+- If diffs small, regression won't matter much 
+
+- @hoimakin07
+
+## Matching as Preprocessing for Dynamic Treatment Regimes
+
+@blastr22 
+
+# Sensitivity to an Unidentifiable Parameter
+
+## Mediation Analysis
+
+# Sensitivity to an Unobserved Covariates
+
+## "Rosenbaum sensitivity" analysis
+
 
 ***
 
