@@ -159,11 +159,11 @@ What does this mean?
 
 Different distributions; non-overlap
 
-![Here](figs/02-hiks-qq-candviz.png)
+![](figs/02-hiks-qq-candviz.png){fig-align="center" height=80%}
 
 ***
 
-![Here](figs/02-hiks-candviz.png)
+![](figs/02-hiks-candviz.png)
 
 
 ## Paradox of Regression for causal inference?
@@ -258,7 +258,7 @@ Sociability affects whether called (know more people) and turnout.
 
 Sensitivity: how strong must sociability be to invalidate inference about phone calls?
 
-# Odds
+<!-- # Odds -->
 
 ## Odds
 
@@ -343,7 +343,7 @@ Clearly, huge absolute improvements.
 \end{center}
 
 
-# Rosenbaum's Model
+<!-- # Rosenbaum's Model -->
 
 ## Modeling Hidden Bias
 
@@ -432,11 +432,11 @@ Shows $\Gamma = e^{\gamma}$.
 
 <!-- What is the test here?  RTM  -->
 
-![Here](figs/02-sens-tab1.png)
+![](figs/02-sens-tab1.png)
 
 \pause
 
-\vspace{5mm}
+<!-- \vspace{5mm} -->
 
 - Groups: smokers/nonsmokers
 - Outcome: lung cancer
@@ -458,7 +458,7 @@ Shows $\Gamma = e^{\gamma}$.
 
 \begin{table}[ht]
     \centering
-    \caption{Example Table}
+    % \caption{Example Table}
     \begin{tabular}{c|c|c}
     \hline
     $\Gamma$ & Minimum & Maximum \\
@@ -499,7 +499,7 @@ Table 4.2: Signed-Rank Statistic $p$-value Sensitivity for Lead in Children's Bl
 
 \begin{table}[ht]
     \centering
-    \caption{Example Table}
+    % \caption{Example Table}
     \begin{tabular}{c|c|c}
     \hline
     $\Gamma$ & Minimum & Maximum \\
@@ -538,7 +538,7 @@ Table 4.3: Point Estimate Sensitivity for Lead in Children's Blood
 
 \begin{table}[ht]
     \centering
-    \caption{Example Table with 95\% Confidence Intervals}
+    % \caption{Example Table with 95\% Confidence Intervals}
     \begin{tabular}{c|c}
     \hline
     $\Gamma$ & 95\% CI \\
