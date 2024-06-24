@@ -31,7 +31,7 @@ library(tidyverse)
 New Directions in Causal Inference   
 DYNAMICS Research Group  
 15 July - 17 July 2024  
-Monday-Friday 10:00-15:00 CEST (UTC+02:00)  
+Monday-Wednesday 10:00-15:00 CEST (UTC+02:00)  
 Luisenstraße 56, Raum 220
 
 # Instructor Information
@@ -48,7 +48,7 @@ This workshop is designed to introduce some recent developments in causal infere
 
 # Prerequisites 
 
-Students should be familiar with the rudiments of the potential outcomes model for causal inference, as well as topics in introductory statistics such as null hypothesis significance tests, confidence intervals, and linear regression. Students should be familiar with analyzing data with code, preferably in R or Python. It will be helpful if students have background in techniques for causal inference from experiments and observational data, but we will strive to build ideas from the ground up. Students without familiarity or experience in these topics are also welcome.
+Students should be familiar with the rudiments of the potential outcomes model for causal inference, as well as topics in introductory statistics such as null hypothesis significance tests, confidence intervals, and linear regression. Students should be familiar with analyzing data with code, preferably in R or Python. It will be helpful if students have background in techniques for causal inference from experiments and observational data, but we will strive to build ideas from the ground up. Students without familiarity or experience in these topics are also welcome. Students are not expected to review the resources on this syllabus prior to the workshop.
 
 # Intellectual Property
 
@@ -56,7 +56,7 @@ Course content is the intellectual property of the instructor or student who cre
 
 # Calendar
 
-## Day 1: Monday, 15 July
+## Day 1: Monday, 15 July 2024
 
 Data science methods in causal inference
 
@@ -76,7 +76,7 @@ Data science methods in causal inference
 - @athwag19  
 - @herrob24
 
-## Day 2: Tuesday, 16 July
+## Day 2: Tuesday, 16 July 2024
 
 Sensitivity analyses
 
@@ -95,7 +95,7 @@ Sensitivity analyses
 - @keele22
 - @rosenbaum20
 
-## Day 3: Wednesday, 17 July
+## Day 3: Wednesday, 17 July 2024
 
 Modern difference-in-difference designs
 
