@@ -39,8 +39,15 @@ library(tidyverse)
 
 ## What is "sensitivity"?
 
-<!-- Include a PDF/PNG/... -->
-<!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
+\LARGE
+
+When inputs change, do outputs change?
+
+\pause 
+
+>- With different variables in model, does parameter of interest change?
+>- With different assumptions about error structures, does causal mediation estimate change?
+>- With different data collected, would causal conclusion change?
 
 <!-- Include PDFs in columns -->
 <!-- \includegraphics[width=2in]{figs/myfig1.pdf} -->
@@ -56,7 +63,38 @@ Idea
 
 ## Example 1
 
-@moopowree13
+\large
+
+>- "Great Recession" following global financial crisis of 2008-2009 ("subprime mortage crisis")
+>- Two big bills in US Congress to shore up US auto industry
+>    - Auto Bailout:
+>    - Cash for Clunkers:
+
+\pause 
+
+@moopowree13 estimate relationship between presence of auto factories and Congressional votes these 2 quasi-private, particularistic bills.
+
+\pause 
+
+Claim: Local econ interests at least on par with corporate campaign contributions, corporate lobbying, corporate public positions.
+
+## @moopowree13
+
+![First differences for predicted probabilities of member supporting the auto bailout, comparing member from industry district to one from non-industry district, setting other variables at their means.](figs/02-fd690dwFac.pdf){fig_align="center" height=80%}
+
+## @moopowree13
+
+![First differences between industry and non-industry district members' probabilities of supporting the bailout remain positive at any value of DW-NOMINATE score. Mean estimates represented by black discs; 95% confidence intervals for each contribution level represented by red vertical bars. Ticks across bottom represent (jittered) observed DW-NOMINATE scores for Democrats, Republicans, and party defectors.](figs/02-fd690dwDW.pdf){fig_align="center" height=80%}
+
+
+
+## @moopowree13
+
+![Industry presence coefficient always positive in Bailout vote logistic regressions. Coefficient densities with industry presence and DW-NOMINATE always included. Every combination of other variables included and excluded: contributions from Big 3 PAC, AFL-CIO PAC, AFIT-PAC, Auto Dealers PAC, Foreign Auto Dealers PAC, Auto Dealers and Drivers PAC, Transit Union Workers PAC. PAC contributions logged. Panel title gives entire range of coef SEs.](figs/02-bailoutLogDWall.pdf){fig_align="center" height=80%}
+
+## @moopowree13
+
+![Industry presence coefficient always positive in Cash for Clunkers vote logistic regressions. Coefficient densities with industry presence and DW-NOMINATE always included. Every combination of other variables included and excluded: contributions from Big 3 PAC, AFL-CIO PAC, AFIT-PAC, Auto Dealers PAC, Foreign Auto Dealers PAC, Auto Dealers and Drivers PAC, Transit Union Workers PAC. PAC contributions logged. Panel title gives entire range of coef SEs.](figs/02-clunkersLogDWall.pdf){fig_align="center" height=80%}
 
 ## Implementation
 
@@ -183,6 +221,700 @@ Different distributions; non-overlap
 # Sensitivity to an Unidentifiable Parameter
 
 ## Mediation Analysis
+
+Confounding in Observational Studies
+
+```{r warning = FALSE}
+#| echo: false
+coords <- list(x = c(T = 0, X = 1, Y = 2, M = 1),
+               y = c(T = 1, X = 0, Y = 1.1, M = 1.5))
+dagify(Y ~ T + M, T ~ X, Y ~ X, M ~ T, coords = coords) |>
+  ggdag_classic(size = 30) + theme_dag_blank()
+```
+
+## Mediation Effects
+
+\Large
+
+>- If interest is $M \to Y$, seek experiment-like $M$
+>    - random $M$
+>    - subclassify/match for $M$
+>    - instrumented $M$
+>    - RDD, synthetic control for $M$
+>- If interest is $T \to Y$, seek experimental $T$
+>    - random $T$
+>    - subclassify/match for $T$
+>    - instrumented $T$
+>    - RDD, synthetic control for $T$
+>- In _mediation_, interest is $T \to M \to Y$
+>    - (and maybe $T \to (\lnot M) \to Y$)
+
+
+## Mediation Effects
+
+\Large
+
+Condition on /control for $M$?
+
+\pause
+
+>- No: how to estimate $M \to Y$?
+>- Yes: induces _post-treatment bias_ in estimate of $T \to Y$
+
+\pause
+
+>- And if $X \to M$, too?
+>- Even worse \ldots
+
+***
+
+```{r warning = FALSE}
+#| echo: false
+coords <- list(x = c(T = 0, X = 1, Y = 2, M = 1.1),
+               y = c(T = 1, X = 0, Y = 1.1, M = 1.5))
+dagify(Y ~ T + M, T ~ X, Y ~ X, M ~ T + X, coords = coords) |>
+  ggdag_classic(size = 30) + theme_dag_blank()
+```
+
+
+## Addressing Confounding
+
+\Large
+
+To break confounding,
+
+>- can't break $X \to Y$
+>- break $X \to T$
+>- but $X \to M$ may still remain!
+
+<!-- # Post-Treatment Bias -->
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- <!-- \note{ --> -->
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!--   \item Assumption: randomized experiment, no bias from --> -->
+<!-- <!--     self-assignment to treatment --> -->
+<!-- <!--   \item Assumption: perfect compliance --> -->
+<!-- <!--   \item Plot: (Pr(Lung Cancer) $\sim$ smoking status) --> -->
+<!-- <!--   \end{itemize} --> -->
+
+<!-- - Interest in effect of news on attitude. \pause  Randomly assign news: -->
+<!-- ```{r warning = FALSE} -->
+<!-- n <- 200 -->
+<!-- news <- sample(0:1, n, rep = TRUE) -->
+<!-- ``` -->
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- - News status greatly affects Anxiety: -->
+
+<!-- ```{r warning = FALSE, fig.height=4.5, echo=TRUE} -->
+<!-- pr.anx <- 1/(1 + exp(-(news * 2 + rnorm(n)))) -->
+<!-- ``` -->
+<!-- \pause  -->
+<!-- ```{r warning = FALSE, fig.height=4, echo=FALSE} -->
+<!-- pt <- tibble(news, pr.anx) -->
+<!-- ggplot(pt, aes(news, pr.anx, group = news)) + geom_boxplot() + labs(x = "News", y = "Anxiety") -->
+<!-- ``` -->
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- - News status greatly affects Anxiety: -->
+
+<!-- ```{r} -->
+<!-- summary(lm(pr.anx ~ news))$coef |> round(3) -->
+<!-- ``` -->
+
+<!-- <!-- \vspace{-3mm} --> -->
+<!-- <!--  \begin{center} --> -->
+<!-- <!--  \includegraphics[angle=0, width=2.2in]{../figs/ptTrend} --> -->
+<!-- <!--  \end{center} --> -->
+
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- <!-- \note{ --> -->
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!--   \item (linear predictor of) mortality is function of Tr,  --> -->
+<!-- <!--   \item Whether you're nonsmoker or smoker, lung cancer --> -->
+<!-- <!--     incr. mortality --> -->
+<!-- <!--     \item But {\it clearly}, smokers more likely to get LC, and have higher mortality --> -->
+<!-- <!--   \end{itemize} --> -->
+<!-- <!-- } --> -->
+
+<!-- >- Anxiety greatly increases (negative) attitude -->
+<!-- >    - (but news also has other ways to increase negative attitude) -->
+
+<!-- \pause  -->
+
+<!-- ```{r warning = FALSE} -->
+<!-- attitude <- .1 * news + pr.anx + rnorm(n, sd = 0.2) -->
+<!-- ``` -->
+
+<!-- ```{r warning = FALSE, echo = FALSE} -->
+<!-- pt <- tibble(news, pr.anx, attitude) -->
+<!-- ``` -->
+
+<!-- \pause  -->
+
+<!-- ```{r warning = FALSE, message = FALSE, echo = FALSE, fig.height=4} -->
+<!-- ggplot(pt, aes(pr.anx, attitude)) + geom_point() + geom_smooth() + facet_wrap(~ news) -->
+<!-- ``` -->
+
+<!-- <!-- \vspace{-3mm} --> -->
+<!-- <!--  \begin{center} --> -->
+<!-- <!--  \includegraphics[angle=0, width=2.6in]{../figs/ptBias} --> -->
+<!-- <!--  \end{center} --> -->
+
+
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- \large -->
+
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!--   \item Analysis 1: no effect of smoking!! --> -->
+<!-- <!--   \item Analysis 2: clear effect of smoking --> -->
+<!-- <!--     ($1.4\sigma_y^{\text{controls}}$) --> -->
+<!-- <!--   \item Note: Tr was randomly assigned!  I have no other confounders. --> -->
+<!-- <!--     If Tr {\it nonrandomly} assigned, I have all the usual obs. study --> -->
+<!-- <!--     problems, plus possibility of post-treatment bias. --> -->
+<!-- <!--   \end{itemize} --> -->
+
+<!-- >- Interested in causal effect of news on attitude -->
+<!-- >- Analysis 1: Adjust for anxiety status: -->
+
+<!-- \pause  -->
+
+<!-- ```{r warning = FALSE} -->
+<!-- summary(lm(attitude ~ news + pr.anx))$coef |> round(4) -->
+<!-- ``` -->
+
+<!-- <!--             Estimate Std. Error t value Pr(>|t|)     --> -->
+<!-- <!-- (Intercept)  0.04955    0.06152   0.805    0.423     --> -->
+<!-- <!-- smoke        0.03881    0.05348   0.726    0.470     --> -->
+<!-- <!-- pr.lc        0.95007    0.11028   8.615  1.3e-13 *** --> -->
+
+<!-- \pause -->
+
+<!-- >- Great! Now, say, multiply coefs, to get $T \to M \to Y$? -->
+<!-- >- Problem: This doesn't work. -->
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- \large -->
+
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!--   \item Analysis 1: no effect of smoking!! --> -->
+<!-- <!--   \item Analysis 2: clear effect of smoking --> -->
+<!-- <!--     ($1.4\sigma_y^{\text{controls}}$) --> -->
+<!-- <!--   \item Note: Tr was randomly assigned!  I have no other confounders. --> -->
+<!-- <!--     If Tr {\it nonrandomly} assigned, I have all the usual obs. study --> -->
+<!-- <!--     problems, plus possibility of post-treatment bias. --> -->
+<!-- <!--   \end{itemize} --> -->
+
+<!-- >- Interested in causal effect of news on attitude -->
+<!-- >- Analysis 2: Don't control for anxiety status: -->
+
+<!-- \pause  -->
+
+<!-- ```{r warning = FALSE} -->
+<!-- summary(lm(attitude ~ news))$coef |> round(4) -->
+<!-- ``` -->
+
+<!-- <!-- > summary(lm(lp.mort ~ smoke)) --> -->
+<!-- <!--             Estimate Std. Error t value Pr(>|t|)     --> -->
+<!-- <!-- (Intercept)  0.52174    0.03694   14.13  < 2e-16 *** --> -->
+<!-- <!-- smoke        0.37395    0.04850    7.71 1.05e-11 *** --> -->
+
+<!-- \pause -->
+
+<!-- >- Great! Now, say, subtract coef Analysis 1 from this, to get $T \to M \to Y$? -->
+<!-- >- Problem: This doesn't work. -->
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- <!-- The roughest, rawest advice.\\ --> -->
+<!-- <!-- {\bf Draw the Tr timing arrow.} --> -->
+
+<!-- If you want the effect of $T$ on $Y$, -->
+
+<!-- \begin{itemize} -->
+<!-- \item Match/adjust for (pre-treatment) covariates -->
+<!-- \item Don't match/adjust for other (post-treatment) quantities -->
+<!-- \end{itemize}  -->
+
+<!-- \pause -->
+
+<!-- If I'm not sure about the causal ordering, can I just try both? -->
+<!-- \pause  -->
+
+<!-- Idea: -->
+
+<!-- >- Estimate $Y_i = \beta_0 + \beta_1 T_i + \epsilon_i$ -->
+<!-- >- Estimate $Y_i = \delta_0 + \delta_1 T_i + \delta_2 X_i + \nu_i$ \pause  -->
+
+<!-- Problem: -->
+
+<!-- >- These 2 estimates of TE **don't** bound the truth. -->
+<!-- >- $ATE \stackrel{?}{\in} [\hat{\beta}_1, \hat{\delta}_1 ]$ \pause  We don't know! -->
+
+<!-- ## Post-Treatment Bias -->
+
+<!-- \large -->
+
+<!-- >- Think really hard about design. -->
+<!-- >- Some ideas -->
+<!-- >    - Redefine the treatment (audit studies) -->
+<!-- >    - Find a valid instrument/discontinuity/milestone/opportunity -->
+<!-- >    - Plan an experiment -->
+<!-- >    - Plan several experiments -->
+
+
+
+<!-- ## Mediation -->
+
+<!-- <!-- In the example, --> -->
+<!-- <!-- \begin{itemize} --> -->
+<!-- <!-- \item Treatment: smoking --> -->
+<!-- <!-- \item Mechanism/mediator: lung cancer \pause  --> -->
+<!-- <!-- \item Key: we've shown that even if $T$ randomized, adjusting for $M$ gives biased --> -->
+<!-- <!--   estimate of causal effect \pause  --> -->
+<!-- <!-- \item Ok, I want effect of smoking on mortality that {\it goes --> -->
+<!-- <!--     through} lung cancer --> -->
+<!-- <!-- \end{itemize} --> -->
+
+
+
+
+<!-- ## Mediation Exercise -->
+
+<!-- <!-- \note{ --> -->
+<!-- <!-- Not just direction. --> -->
+<!-- <!-- \begin{enumerate} --> -->
+<!-- <!-- \item Reminds voter of election day; heightens sense of party-team --> -->
+<!-- <!--   identity --> -->
+<!-- <!-- \item Kids can focus in class; nicer groceries and kids eat better --> -->
+<!-- <!-- \item Make opponent look supportive of outgroup; heighten fear of --> -->
+<!-- <!--   fiscal armeggedon --> -->
+<!-- <!-- \end{enumerate} --> -->
+<!-- <!-- } --> -->
+
+<!-- Describe two mechanisms through which -->
+
+<!-- \begin{enumerate} -->
+<!-- \item a GOTV prompt could increase turnout -->
+<!-- \item neighborhood safety could increase GPA -->
+<!-- \item a political attack advertisement could increase propensity to vote for -->
+<!--   anti-welfare state candidate -->
+<!-- \end{enumerate} -->
+
+<!-- \pause -->
+<!-- \vspace{3mm} -->
+
+<!-- Mediation analysis tries to estimate _how much_ effect of $T$ on -->
+<!-- $Y$ goes through $M$. -->
+
+
+
+## Notation
+
+<!-- <!-- \note{ --> -->
+<!-- <!-- (Assuming perfect compliance.) --> -->
+
+<!-- <!-- \begin{itemize} --> -->
+<!-- <!-- \item Q: Is $M_i(t)$ a potential outcome?\\ --> -->
+<!-- <!-- \item[] A: Yes.  Fixed, value revealed based on $t$. --> -->
+<!-- <!-- \item Quiz: --> -->
+<!-- <!-- \begin{itemize} --> -->
+<!-- <!--   \item what's $Y_i(1, M_i(1))$?  mortality would obs given smoking and LC you'd --> -->
+<!-- <!--     get under smoking. --> -->
+<!-- <!--    \item what's $Y_i(0, M_i(0))$? mortality would obs given nonsmoking and LC --> -->
+<!-- <!--      you'd get under nonsmoking.  ($M_i(0)$ may $=1$: still get LC.) --> -->
+<!-- <!--   \item what's $Y_i(1, M_i(1)) - Y_i(0, M_i(0))$?   Total mortality --> -->
+<!-- <!--     difference would obs. for $i$ under smoking minus $i$ under nonsmoking, just --> -->
+<!-- <!--     letting LC vary as it will under each assg. --> -->
+<!-- <!--     \item what's $Y_i(1, M_i(0))$?  mortality would obs under smoking, but LC --> -->
+<!-- <!--       value from nonsmoking.  (Jason...)  (Imagine randomizing LC values.) --> -->
+<!-- <!-- \end{itemize} --> -->
+<!-- <!-- \end{itemize} --> -->
+<!-- <!-- } --> -->
+
+<!-- <!-- %Welcome back to ``compliance''.  \pause You know this can --> -->
+<!-- <!-- %clarify underlying ideas.  \pause  --> -->
+
+\begin{itemize}
+\item $M_i(t)$: value of the mediator (function of treatment) \pause
+\item $Y_i(t,m)$: potential outcome under some combination of $t$, $m$
+  \pause
+\item $Y_i(T_i, M_i(T_i))$: potential outcome under
+  \begin{itemize}
+  \item $T_i = t$
+  \item $M_i$ you would get with $T_i=t$
+  \end{itemize} \pause
+\item Quiz: \pause  In news/anxiety/attitude example,
+  \begin{itemize}
+  \item what's $Y_i(1, M_i(1))$?
+   \item what's $Y_i(0, M_i(0))$?
+  \item what's $Y_i(1, M_i(1)) - Y_i(0, M_i(0))$?
+  \item what's $Y_i(1, M_i(0))$?
+  \end{itemize}
+\end{itemize}
+
+
+## Notation: Causal Effects
+
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!--   \item Mediation effects: hold Tr/Co constant, manipulate mediator --> -->
+<!-- <!--   \item Direct effects: hold mediator constant, manipulate --> -->
+<!-- <!--     Tr/Co. (``zeta'') --> -->
+<!-- <!-- \item Note: Plural -- ``effectS'' --> -->
+<!-- <!-- \item Immig -- Mediation: effect of changing anxiety on opinion (for fixed --> -->
+<!-- <!--   Tr status). --> -->
+<!-- <!-- \item Immig -- Direct: effect of exposure on opinion, holding anxiety fixed. --> -->
+<!-- <!--   \end{itemize} --> -->
+
+For individuals:
+\begin{itemize}
+\item $Y_i(1, M_i(1)) - Y_i(0, M_i(0))$: Total effect \pause
+\item $Y_i(0, M_i(1)) - Y_i(0, M_i(0)) \equiv \delta_i(0)$:
+  Indirect/Mediation effect under Co
+\item $Y_i(1, M_i(1)) - Y_i(1, M_i(0)) \equiv \delta_i(1)$:
+  Indirect/Mediation effect under Tr  \pause
+\item ACMEs: $\bar{\delta}(1)$ and $\bar{\delta}(0)$ \pause
+\item $Y_i(1, M_i(0)) - Y_i(0, M_i(0))\equiv \zeta_i(0)$: Direct
+  effect of Tr on $Y$,\\ under mediator value as if control
+\item $Y_i(1, M_i(1)) - Y_i(0, M_i(1))\equiv \zeta_i(1)$: Direct
+  effect of Tr on $Y$,\\ under mediator value as if treated \pause
+\item ADEs: $\bar{\zeta}(1)$ and $\bar{\zeta}(0)$ \pause
+\end{itemize}
+
+<!-- ## Notation: Causal Effects -->
+
+<!-- \large  -->
+
+<!-- - Let $T=$ randomized exposure to immigration news -->
+<!-- - Let $M=$ anxiety -->
+<!-- - Let $Y=$ opinion on immigration \pause -->
+
+
+<!-- - Describe the mediation effects -->
+<!-- - Describe the direct effects -->
+
+
+<!-- ## Moderation and Interaction -->
+
+
+<!-- <!--   \item 3rd vars:  primary interest is relationship betwn $T --> -->
+<!-- <!--     \Rightarrow Y$.  Mod/meds are related to this relationship, but --> -->
+<!-- <!--     not $T$ or $Y$. --> -->
+<!-- <!--   \item MEDiators fall betwn $T$ and $Y$, are affected by $Y$.  Are --> -->
+<!-- <!--     ``mechanisms'', ``pathways''.  Mediation analysis: how much of --> -->
+<!-- <!--     effect of $T$ goes through this mechanism? --> -->
+<!-- <!--  \item MODerators are pretreatment covariates, but they affect not --> -->
+<!-- <!--    just {\it level} of $Y_i$ observed (``confounders''), but also size --> -->
+<!-- <!--    of $TE_i$ --> -->
+<!-- <!-- \item I.e., controlling for confounders reduces bias in estimate of, --> -->
+<!-- <!--   e.g., ATE. --> -->
+<!-- <!-- \item[]  Moderation means we have {\it multiple} causal estimates, one --> -->
+<!-- <!--   for each level of moderator. --> -->
+
+<!-- >- Moderators and mediators are both ``third variables\text{''} -->
+<!-- >- First, our DAG model for mediation: -->
+
+<!-- \pause  -->
+
+<!-- \begin{center} -->
+<!-- \includegraphics[angle=0, width=2in]{figs/08-iktyMedModel.jpg} -->
+<!-- \end{center}  -->
+<!-- \pause  -->
+
+<!-- >- What's "moderation"? -->
+<!-- >    - When $E(Y_i(1) - Y_i(0) | X = x_1) \neq E(Y_i(1) - Y_i(0) | X -->
+<!--     = x_2)$ -->
+<!-- >    - When there are ``heterogeneous treatment effects\text{''} -->
+<!-- >    - When there is an ``interaction between $T$ and $X$\text{''} -->
+
+
+
+<!-- ## What does Moderation Look Like? -->
+
+<!-- <!-- \begin{center} --> -->
+<!-- <!--   See {\tt moderation.R}. --> -->
+<!-- <!-- \end{center} --> -->
+
+<!-- <!-- \pause  --> -->
+
+<!-- \large  -->
+
+<!-- Notes on interactions: -->
+
+<!-- >- If they are in DGP, omitting can lead to terrible estimates -->
+<!-- >    - Include in $p$-score models -->
+<!-- >- Ignore stat. sig. of ``main\text{''} linear terms   -->
+<!-- [@braumoeller04] -->
+<!-- >- Don't fish! -->
+
+
+<!-- <!-- ``Indirect effect'' definition less clear here than in mediation --> -->
+
+<!-- <!-- If offensive, just think ``mediator causal effect''. --> -->
+
+
+
+
+## Are 2 Experiments Enough for Mediation CEs?
+
+\begin{itemize}
+\item Exp. 1: Randomize $T_i$, measure $M_i$, get ``ACE of $T$ on
+  $M$'' \pause
+\item Exp. 2: Randomize $M_i$, measure $Y_i$, get ``ACE of $M$ on
+  $Y$'' \pause
+\item Then, combine somehow, get ACME/Indir. effect of $T$ on $Y$ via $M$?
+\pause
+\item But, this doesn't get you
+  \begin{itemize}
+  \item Unbiased estimate \pause
+  \item Sign of ACME \pause
+  \item Informative bounds for ACME!
+  \end{itemize}
+\end{itemize}
+
+
+## Usual (Best-Case?) Way to "Combine Somehow"
+
+"Baron & Kenny Procedure"
+
+\begin{eqnarray}
+ M_i  & = & \alpha_1 + a T_i + \epsilon_{i1} \\
+ Y_i  & = & \alpha_2 + c T_i + \epsilon_{i2} \\
+ Y_i  & = & \alpha_3 + d T_i + bM_i + \epsilon_{i3}
+\end{eqnarray}
+
+\pause
+(Can add $+ {\bf e}_1 X_i$, $+ {\bf e}_2 X_i$, $+ {\bf e}_3 X_i$.)
+
+\pause
+
+Then, call effect of
+\begin{eqnarray*}
+T \to M & = & a \\
+T \to Y & = & c \qquad \qquad \text{(Total)}\\
+T \to Y & = & d \qquad \qquad \text{(Direct)}\\
+  M \to Y & = & b \\
+T \to M \to Y & = & c-d = ab \qquad
+\text{(Mediation)}
+\end{eqnarray*}
+
+\pause
+
+Problem: This doesn't work.
+
+
+## Why Aren't 2 Experiments Enough?
+
+<!-- <!-- \note{Consider table. --> -->
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!--   \item Imagine pop with 4 types of people --> -->
+<!-- <!--   \item Imagine see all potential outcomes (cols 2-5) --> -->
+<!-- <!-- \item Imagine Tr only affects $Y$ through $M$ediator --> -->
+<!-- <!-- \item Calculate avg pot. outcomes for various $t$, $m$ (last row) --> -->
+<!-- <!-- \item Then, easy to do subtraction, calculate effects of $T$ on $M$, --> -->
+<!-- <!--   $M$ on $Y$ (the ``2 experiments'') --> -->
+<!-- <!-- \item Also easy to calc. each type's Mediation effect, and average.   --> -->
+<!-- <!-- \item Clearly, product/difference of Baron-Kenny regression coefs is wrong! --> -->
+<!-- <!--   \end{itemize} --> -->
+
+![](figs/02-iktySItable.jpg)
+
+\pause
+
+\begin{tabular}{lcccc}
+$T \to M$ & $=$ & $a$ & $=$ &0.2 \\
+$M \to Y$ & $=$ & $b$ & $=$ &0.2 \\
+$T \to M \to Y$ & $=$ & $ab$ & $=$ & 0.04
+\end{tabular}
+
+\pause
+
+\vspace{1mm}
+But, true $\bar{\delta}(t)$, ACME, $=-0.2$!
+
+
+
+## What Else Do You Need?
+
+Consistency assumption:  $T_i = t$, $M_i = m$ have same effect
+regardless of how they came to have those values.
+
+\pause
+\vspace{3mm}
+
+(Using lottery to estimate effect of income on attitude requires
+**lottery income**  to have same effect as **regular income**.)
+
+\pause
+\vspace{3mm}
+
+The ACME, e.g., is an estimate of the effect of changes in $M$ due to changing
+$T$ (but without changing $T$).
+
+\pause
+\vspace{3mm}
+
+(Other manipulations of $M$ rely on consistency.)
+
+
+
+## What Else Do You Need?
+
+Big picture: to get more detailed estimates from same data, need more assumptions
+
+![](figs/02-iktySeqIgnor.jpg)
+
+
+## What Else Do You Need?
+
+- Eqn 3: Conditional independence of PotOut's from Tr, given $X$ (pretreatment!)
+    - Ok, for random $T$, or balanced obs design.  $T$ as good as random, exog., etc.
+    - ($t'$ is just saying, for each $t=0,1$, must have $Y$'s from both
+$t=0,1$ must be indep.)
+- Eqn 4: Hard.  Mediator is as good as random, given particular Tr
+  status
+- Problem: can't randomize _both_ $T$ and $M$ in same experiment
+    - (if want effect of $T$ through $M$)
+- You're getting 2 different QoI's if you randomize both: $T \to M, Y$ and $M
+  \to Y$.
+    - Showed can't combine those into $T \to M \to Y$
+
+<!-- ## When Can You Get It? -->
+
+<!-- <!-- \begin{itemize} --> -->
+<!-- <!-- \item Problem: $T$ may affect $N$ which may affect $M$  --> -->
+<!-- <!-- \item[] What about matching/adjusting for $N$?  (No, it's post-Tr!) --> -->
+<!-- <!-- \item[] In (3), need to adjust for $X$ sometimes -- get balance, find rand. experiment --> -->
+<!-- <!-- \item[] But, in (4), adjusting for $X$ not enough -- may have --> -->
+<!-- <!--   imbalance on $N$.  If don't adjust, it's like bad obs. study.  If do --> -->
+<!-- <!--   adjust, it's like obs. study with post-treatment bias. --> -->
+<!-- <!-- \item E.g., random ImmigNews.  Knowing $T$ doesn't tell $Y$, $M$ --> -->
+<!-- <!--   values. --> -->
+<!-- <!-- \item[] But, if ImmigNews affects both anxiety $M$ and issueAwareness --> -->
+<!-- <!--   $N$, and issueAwareness affects anxiety $M$, you're in deep. --> -->
+<!-- <!-- \item Can't even get sensitivity analysis here. --> -->
+<!-- <!--   \end{itemize} --> -->
+
+
+<!-- \begin{center} -->
+<!--  \includegraphics[angle=0, width=4.5in]{figs/08-iktyMedProblem.jpg} -->
+<!-- \end{center} -->
+
+
+
+<!-- ## Estimating Mediation Effects -->
+
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!-- \item Generally, combination of model outputs\\ --> -->
+<!-- <!-- (quasi-Bayes Monte Carlo draws of model --> -->
+<!-- <!--     parameters procedure) --> -->
+<!-- <!--   \item BK procedure, using {\tt lm()} is example. --> -->
+<!-- <!--   \item But estimation doesn't ensure good answer! --> -->
+<!-- <!--   \item Sensitivity {\it as part of} results summary --> -->
+<!-- <!--   \end{itemize} --> -->
+
+
+<!-- \begin{itemize} -->
+<!-- \item Subtlety: $\exists$ causal DAG's for which -->
+<!--     sensitivity of ACME can be est'd; even some with ACME identified. \pause -->
+<!-- \item However, must convince that $\nexists$ $N \to M$, whether or not $N$ observed.  \pause -->
+<!-- \item Practical advice: start there.  \pause  Then, -->
+
+<!-- \begin{center} -->
+<!-- \includegraphics[angle=0, width=3in]{figs/08-iktyMedSoftware.jpg} -->
+<!-- \end{center} -->
+<!-- \end{itemize} -->
+
+<!-- (From \href{http://imai.princeton.edu/research/files/mediationR.pdf}{here}.) -->
+
+<!-- ## Sensitivity for Mediation Effects -->
+
+
+<!-- <!-- Sensitivity:  ``How bad would it have to be to change my answer?'' --> -->
+
+<!-- Given -->
+<!-- \begin{eqnarray} -->
+<!-- M_i  & = & \alpha_1 + a T_i + \epsilon_{i1} \\ -->
+<!-- Y_i  & = & \alpha_2 + c T_i + \epsilon_{i2} \\ -->
+<!-- Y_i  & = & \alpha_3 + d T_i + bM_i + \epsilon_{i3} -->
+<!-- \end{eqnarray} -->
+
+<!-- \begin{itemize} -->
+<!-- \item Q: How much covariance $\rho$ is there between $\epsilon_{i1}$ and -->
+<!--   $\epsilon_{i3}$? \pause -->
+<!-- \item A: If Seq. Ig. is true, then none ($X$-adjustment does its job) \pause -->
+<!-- \item[] (If $P$, then $Q$.)  \pause -->
+<!-- \item If $\rho \neq 0$, then Seq. Ig. is false (likely hidden -->
+<!--   confounder) \pause -->
+<!-- \item[] (If $\lnot Q$, then $\lnot P$.) \pause -->
+<!-- \item[] (I.e., From freq. standpoint, you can find ``evidence of problem'', or ``no evidence -->
+<!--   of problem'', but not ``evidence of no problem''.) -->
+<!-- \end{itemize} -->
+
+## Sensitivity for Mediation Effects
+
+<!-- <!--   \begin{itemize} --> -->
+<!-- <!-- \item Estimate of mediation effect: dashed line. --> -->
+<!-- <!--   \item Problem: {\it True} value of $\rho$ unknown (``errors'', not --> -->
+<!-- <!--     ``residuals'') --> -->
+<!-- <!--   \item So, have to propose range of $\rho_0$ values,\\ figure out: ``given --> -->
+<!-- <!--     our obs. data $+ \rho_0$, what would true ACME be?'' --> -->
+<!-- <!--   \item Note: This sensitivity is {\it only} to unobserved --> -->
+<!-- <!--     pretreatment $X$ confounding --> -->
+<!-- <!-- \item If $\rho=0$, estimated ACME is true. --> -->
+<!-- <!-- \item[] If $\rho =.5$, estimated ACME is off from 0 (and big --> -->
+<!-- <!--   overestimate) --> -->
+<!-- <!-- \item[] If $\rho =-.75$, estimated ACME is off from truth (and big --> -->
+<!-- <!--   underestimate) --> -->
+<!-- <!--   \end{itemize} --> -->
+
+![](figs/02-iktyMedSens.jpg)
+
+
+<!-- ## Design for Mediation Effects -->
+
+<!-- @imakeetin11 -->
+
+<!--   <!-- \item Random $T$, measure $M$, measure $Y$ --> 
+<!--   <!-- \item Media cues {\it encourage} emotional changes -->
+<!--   <!-- \item Parallel: 1) single-exp, 2) another encouragement of emotion --> 
+<!--   <!--   change (writing task).  (But, still not ID'ed, relying on --> 
+<!--   <!--   assumptions.) --> 
+<!--   <!-- \item Combine Parallel with IV, identify the CACME.\\(I.e., get some --> 
+<!--   <!--   random variation in $M$ for both the Tr and Co condition subjects) --> 
+
+
+
+<!-- \begin{itemize} -->
+<!-- \item Single experiment -->
+<!-- \item Encouragements-of-mediator experiments -->
+<!-- \item Parallel encouragement experiments -->
+<!-- \item Parallel encouragement with IV: CACME -->
+<!-- \end{itemize} -->
+
+
+
+## Summary
+
+- Be careful.  \pause  If you estimate, you must do sensitivity. \pause
+    - A serious case of ``don't just get an answer\text{''} \pause
+    - (Do `plot(lm_out)`, too \ldots) \pause
+- @imakeetin11 thorough on assumptions, when trouble, when
+  sensitivity is OK, when identification can be done\pause
+- From @bulgreha10:
+
+![](figs/02-bghMedQuote.jpg)
+
+
 
 # Sensitivity to an Unobserved Covariates
 
@@ -573,8 +1305,8 @@ estimates of parents on children are reasonable.
 
 Packages
 
-<!-- - @framarduo13: `konfound` -->
-<!-- - @keele15: `rbounds` -->
+- @framarduo13: `konfound`
+- @keele22: `rbounds`
 - `sensitivitymw`
 - `sensitivitymv`
 
