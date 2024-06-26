@@ -1,0 +1,159 @@
+---
+title: "Sensitivity Analyses Lab"
+author: 
+  - Ryan T. Moore^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
+format: 
+  pdf:
+    number-sections: true
+    toc: false
+    geometry: 
+      - top=3cm
+date: 2024-07-16
+date-format: iso
+documentclass: article
+editor: source
+bibliography: ../admin/main.bib
+---
+
+```{r setup}
+#| echo: false
+#| message: false
+
+library(gam)
+library(Matching)
+library(mediation)
+library(olsrr)
+library(rbounds)
+library(tidyverse)
+```
+
+# Model Sensitivity {#sec-model}
+
+@bravalsuh08 estimate the effects of experimental exposure to stories with positive vs. negative framing valence and Latino vs. European immigrants on attitudes about immigration and ethnicity. Replication data are available in the `mediation` package via `data(framing)`.
+
+Using immigration attitudes (`immigr`) as the outcome, estimate all possible linear models including as predictors the treatment, age, income, education, and gender. Examine the distribution of estimated treatment effects. What does this tell you about the sensitivity of the treatment effect estimates?
+
+```{r regall}
+#| echo: false
+#| eval: false
+
+lm_out <- lm(immigr ~ treat + age + income + educ + gender, data = framing)
+
+all_lm <- ols_step_all_possible_betas(lm_out)
+
+hist(all_lm |> filter(predictor == "treat") |> select(beta))
+```
+
+
+# Mediation Sensitivity {#sec-mediation}
+
+In @bravalsuh08, the mediator of interest is the emotion anxiety.
+
+Using the typical procedure described in @imakeetin11, estimate the average direct effect and the average causal mediation effect of the combined treatment (in the variable `treat`) on the degree to which participants oppose increased immigration to the United States. Model the mediator (`emo`) using covariates age, gender, and income, as well as the treatment. Model the outcome as a linear function of these covariates, treatment, and mediator. 
+
+```{r mediate}
+#| echo: false
+#| eval: false
+
+med_fit <- lm(emo ~ treat + age + gender + income, data = framing)
+
+out_fit <- lm(immigr ~ emo + treat + age + gender + income, data = framing) 
+
+med_out <- mediate(med_fit, out_fit, treat = "treat", mediator = "emo", 
+                   robustSE = TRUE, sims = 100)
+
+summary(med_out)
+```
+
+
+Test the sensitivity of the linear-linear mediation effect. How correlated would the errors from your two models need to be to account for the observed effects?
+
+```{r medsens}
+#| cache: true
+#| echo: false
+#| eval: false
+
+sens_out <- medsens(med_out,
+                    rho.by = 0.01,
+                    effect.type = "indirect",
+                    sims = 100)
+
+summary(sens_out)
+```
+
+
+
+
+# Confounding Sensitivity 
+
+In the `framing` data, first, calculate the simple difference in means between the treatment and control groups, using `immigr` as the outcome. Next, estimate a simple linear model with `immigr` as the outcome and `treat`, `age`, and `income` as predictors. Report your estimate of the average treatment effect.
+
+```{r}
+#| echo: false
+#| eval: false
+
+lm(immigr ~ treat, data = framing)
+
+lm(immigr ~ treat + age + income, data = framing)
+```
+
+Now, create a matched set of respondents using the predictors above, breaking ties randomly. Then, perform Rosenbaum sensitivity analysis for the Hodges-Lehman statistic. How sensitive is the point estimate to "unobserved" confounding?
+
+```{r matchsens}
+#| echo: false
+#| eval: false
+
+data(framing)
+
+mout <- Match(Tr = framing$treat, 
+              X = framing[, c("age", "income")], 
+              ties = FALSE)
+
+tr_out <- framing$immigr[mout$index.treated]
+co_out <- framing$immigr[mout$index.control]
+
+hlsens(tr_out, co_out, Gamma = 2, GammaInc = 0.1)
+```
+
+Last, can you decrease the sensitivity by weakening the confounding through matching on additional predictors in the data set?
+
+```{r matchsens4vars}
+#| echo: false
+#| eval: false
+
+framing <- framing |> mutate(
+  is_male = if_else(gender == "male", 1, 0),
+  educ_ord = case_when(educ == "less than high school" ~ 0,
+                       educ == "high school" ~ 1,
+                       educ == "some college" ~ 2,
+                       educ == "bachelor's degree or higher" ~ 3)
+)
+
+mout_4vars <- Match(Tr = framing$treat, 
+              X = framing[, c("age", "income", "is_male", "educ_ord")], 
+              ties = FALSE)
+
+tr_out <- framing$immigr[mout_4vars$index.treated]
+co_out <- framing$immigr[mout_4vars$index.control]
+
+hlsens(tr_out, co_out, Gamma = 2, GammaInc = 0.1)
+```
+
+<!-- @fig-cars. -->
+
+<!-- ```{r fig-cars} -->
+<!-- #| echo: false -->
+<!-- #| fig-cap: Distance on Speed -->
+
+<!-- ggplot(cars, aes(speed, dist)) + -->
+<!--   geom_point() -->
+<!-- ``` -->
+
+# Model Sensitivity {#sec-model-yours}
+
+Consider a dataset from your research. Estimate a linear model of interest. Interpret a key parameter of interest. 
+
+Now, estimate all possible linear models, perhaps under an order constraint. Examine the distribution of your key parameter of interest. Does your first interpretations appear sensitive to the adjustment set?
+
+
+# References {.unnumbered}
