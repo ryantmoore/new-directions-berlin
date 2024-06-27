@@ -12,13 +12,12 @@ format:
     include-in-header:
       - text: | 
           \usepackage{wasysym} 
-      - file: zzz_beamer_header.tex
     section-titles: true
     toc: true
 institute:
   - American University
   - The Lab @ DC
-bibliography: "main.bib"
+bibliography: "../admin/main.bib"
 ---
 
 ```{r}
@@ -28,11 +27,408 @@ bibliography: "main.bib"
 #| results: false
 #| warning: false
 
+library(broom)
+library(dagitty)
+library(ggdag)
 library(here)
 library(tidyverse)
 ```
 
-# Section Title Page
+# Introductions
+
+## About Me
+
+\Large
+
+- Associate Prof of Government  
+(American University)
+- Associate Director, Center for Data Science  
+(American University)
+- Senior Social Scientist  
+(The Lab @ DC)
+- Fellow in Methodology  
+(US Office of Evaluation Sciences: "OES") \pause 
+- Research agenda: political methodology, causal inference, experimental design, 
+experiments in public policy
+
+## About You!
+
+\Large
+
+>- Name?
+>- Role? 
+>- Interests?
+>- Olympic sport you look forward to?
+
+## Plan
+
+\large
+
+>- Data Science in Causal Inference
+>    - Models
+>    - Heterogeneous treatment effects
+>    - Variable selection
+>- Sensitivity
+>    - Model specification
+>    - Unobservable parameter
+>    - Unobserved confounders
+>- Modern difference-in-difference designs
+>    - Canonical DiD
+>    - Multiple time periods
+>    - Staggered adoption
+>    - Calloway-Sant'Anna approach
+
+
+
+# Data Science in Causal Inference
+
+## Causal Inference Approaches
+
+The "potential outcomes" framework:
+
+\pause 
+
+\begin{center}
+\begin{tabular}{ccccc}
+ & & Would Enroll if & Would Enroll if  & \\
+Citizen & Canvass? & Canvass? & No Canvass? & Enroll \\ \hline
+1 & Yes & \only<2->{Yes} & \only<6->{\alert{(Yes)}} &  Yes \\
+2 & Yes & \only<3->{Yes} & \only<6->{\alert{(No)}} &  Yes \\
+3 & No & \only<6->{\alert{(Yes)}} & \only<4->{No} &  No \\
+4 & No &\only<6->{\alert{(No)}} & \only<5->{No} &  No
+\end{tabular}
+\end{center}
+
+## Causal Inference Approaches
+
+The "potential outcomes" framework, more abstractly:
+
+\begin{center}
+\begin{tabular}{cccccc}
+&&&&& True $\tau$ \\
+Unit $i$ & Treatment $T$ & $Y(1)$ & $Y(0)$ & $Y^{\text{obs}}$ & $Y(1) - Y(0)$ \\ \hline
+1 & 1 & 10 & \only<2->{\alert{(10)}} &  10 & \only<2->{0}\\
+2 & 1 & 20 & \only<2->{\alert{(10)}} &  20 & \only<2->{10}\\
+3 & 0 & \only<2->{\alert{(40)}} & 15 &  15 & \only<2->{25}\\
+4 & 0 & \only<2->{\alert{(20)}} & 5 &  5 & \only<2->{15} \\ \hline
+&&&& \only<3->{ATE $=\bar{\tau}=$} & \only<3->{$\frac{50}{4} = 12.5$} \\
+&&&& \only<4->{$\widehat{ATE}=\hat{\bar{\tau}}=$} & \only<4->{$15 - 10 =5$} \\
+\end{tabular}
+\end{center}
+
+## Causal Inference Approaches
+
+\large
+
+The "potential outcomes" framework, notation:
+
+- Units indexed by $i$
+- Treatment $T_i$ or $D_i$ or $Z_i$
+- Outcome if treated $Y_i(1)$
+- Outcome if control $Y_i(0)$
+- True treatment effect $\tau_i = Y_i(1) - Y_i(0)$
+- True average treatment effect $\bar{\tau} = \frac{1}{n} \sum_{i=1}^n \left(Y_i(1) - Y_i(0)\right)$
+- Pre-treatment covariates $\mathbf X$
+
+\pause 
+(and we'll draw some DAG's, too)
+
+## Data Science Approaches
+
+\Large 
+
+Three tasks of data science:
+
+>- Description
+>- Prediction
+>- Causal Inference
+
+\pause 
+\vspace{1mm}
+
+Models/algorithms central to all three.
+
+\pause 
+\vspace{1mm}
+
+@herhsuhea19
+
+## Data Science Approaches
+
+\large 
+
+Description
+
+>- Identifying patterns, etc.
+>- E.g., clustering to discover groups
+
+## Data Science Approaches
+
+\large 
+
+Prediction
+
+>- Components
+>    - Inputs/outputs (predictors/outcomes, features/responses, \ldots)
+>    - Mapping from inputs to outputs (linear model, decision tree, \ldots)
+>    - Metric for evaluating mapping
+>- With these, model machine learning does the work
+>- E.g., regression, random forests, neural networks, \ldots
+
+## Data Science Approaches
+
+\large
+
+Causal Inference
+
+>- Potential outcomes/counterfactual/interventionist perspective
+>- Requires _expertise_ different to description/prediction
+>- Requires more than summary statistics, metrics, etc.
+>- Requires some knowledge of causal structure
+>    - Not all inputs treated same
+>    - $T$ v. $\mathbf X$ -- very different!
+>    - (the more knowledge, the better!)
+>    - (alternative: solve fundamental problem of causal inference!)
+>- E.g., experiments, observational causal designs, \ldots
+
+## Causal Inference with Machine Learning
+
+\pause 
+
+![Don't do this.](figs/01-ml-ols-tweet.png)
+\pause 
+
+(OK, not "machine learning", perhaps, but _models_ at least \ldots)
+
+## Causal Inference with Models
+
+```{r}
+#| echo: false
+library(quartets)
+
+data("causal_confounding")
+df1 <- causal_confounding
+
+data("causal_collider")
+df2 <- causal_collider
+```
+
+Loaded two datasets:
+
+```{r}
+str(df1)
+str(df2)
+```
+
+## Causal Inference with Models
+
+```{r}
+#| echo: false
+#| layout-ncol: 2
+
+p1 <- ggplot(df1, aes(exposure, outcome)) + 
+  geom_point(aes(color = covariate)) + geom_smooth(method = "lm") +
+  labs(title = "Data set 1")
+
+p2 <- ggplot(df2, aes(exposure, outcome)) + 
+  geom_point(aes(color = covariate)) + geom_smooth(method = "lm") +
+  labs(title = "Data set 2")
+
+p1
+p2
+```
+
+## Causal Inference with Models
+
+Model each
+
+```{r}
+lm_df1 <- lm(outcome ~ exposure, data = df1)
+lm_df2 <- lm(outcome ~ exposure, data = df2)
+```
+
+```{r}
+#| echo: false
+
+tidy_df1 <- tidy(lm_df1) |> mutate(data = "df1", .before = "term") |> select(data:std.error)
+tidy_df2 <- tidy(lm_df2) |> mutate(data = "df2", .before = "term") |> select(data:std.error)
+tidy_df12 <- bind_rows(tidy_df1, tidy_df2)
+tidy_df12
+```
+
+\pause 
+
+>- Both cases: effect of exposure $\approx 1$. 
+>- Is this good?
+>- What if we adjust for covariate?
+
+## Causal Inference with Models
+
+```{r}
+lm_df1_adj <- lm(outcome ~ exposure + covariate, data = df1)
+lm_df2_adj <- lm(outcome ~ exposure + covariate, data = df2)
+```
+
+```{r}
+#| echo: false
+
+tidy_df1_adj <- tidy(lm_df1_adj) |> mutate(data = "df1", .before = "term") |>
+  filter(term != "(Intercept)") |> select(data:std.error)
+tidy_df2_adj <- tidy(lm_df2_adj) |> mutate(data = "df2", .before = "term") |> 
+  filter(term != "(Intercept)") |> select(data:std.error)
+tidy_df12_adj <- bind_rows(tidy_df1_adj, tidy_df2_adj)
+tidy_df12_adj
+```
+
+>- Both cases: effect of exposure $\approx 0.5$. 
+>- Is this good?
+>- Which is correct? $\beta = 1$? $\beta = 0.5$?
+>- _Should_ we adjust for covariate?
+
+## Causal Inference with Models
+
+\Large
+There is nothing in the data that tells us. \pause \frownie
+
+\pause 
+
+Here are the true structures:
+
+```{r quartetdags}
+#| echo: false
+#| layout-ncol: 3
+coords <- list(x = c(T = 0, X = 1, Y = 2), 
+               y = c(T = 1, X = 0, Y = 1.1))
+dag_conf <- dagify(Y ~ T, T ~ X, Y ~ X, coords = coords) 
+ggdag_conf <- dag_conf |> 
+  ggdag_classic(size = 30) + theme_dag_blank() 
+
+coords <- list(x = c(T = 0, X = 1, Y = 2), 
+               y = c(T = 1, X = 0, Y = 1.1))
+dag_coll <- dagify(Y ~ T, X ~ T, X ~ Y, coords = coords) 
+ggdag_coll <- dag_coll |> 
+  ggdag_classic(size = 30) + theme_dag_blank()
+
+ggdag_conf
+ggplot(NULL) + theme(panel.background = element_blank())
+ggdag_coll
+```
+
+## Causal Inference with Models
+
+When know structures, adjustment sets for unbiasedness differ:
+
+- `df1`: confounding $\Rightarrow$ **adjust for $X$**
+- `df2`: collider $\Rightarrow$ **do not adjust for $X$**
+
+```{r}
+g_conf <- dagitty("dag{ x -> y ; x <- c -> y }")
+g_coll <- dagitty("dag{ x -> y ; x -> c <- y }")
+
+adjustmentSets(g_conf, "x", "y")
+adjustmentSets(g_coll, "x", "y")
+```
+
+## Causal Inference with Models
+
+When know structures, adjustment sets for unbiasedness differ:
+
+- `df1`: confounding $\Rightarrow$ **adjust for $X$**
+- `df2`: collider $\Rightarrow$ **do not adjust for $X$**
+
+```{r quartetdagadjustments}
+#| echo: false
+#| layout-ncol: 2
+
+dag_conf |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
+dag_coll |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
+```
+
+\pause 
+
+(Data from @dagostino23)
+
+## Causal Inference with Models
+
+\large
+
+>- Importance of identifying "pre-treatment covariates", "proper covariates"; doing "design before analysis"
+>- Importance of experiments: strong knowledge about (part of) causal structure
+>- Causal inference is critical to scientific questions, and separate from prediction
+>- Though, methods from prediction can aid causal inference
+>- (A perspective on "causal euphimisms": @hernan18)
+
+
+## Approaches of Prediction and Causal Inference
+
+\large
+
+_Two Cultures_, [@breiman01-two]
+
+- _Data Models_: our "social science modeling"
+- _Algorithmic Models_: our "data science algorithms"
+
+## Methods for Prediction and Causal Inference
+
+\large
+
+- Cross-validation
+- Regression/Decision trees
+- Random forests
+
+@jamwithas21
+
+## Cross-validation
+
+\large
+
+$k$-fold cross-validation
+
+- Randomly partition data into $k$ groups
+- Apply method to $k-1$ groups
+- Use result to predict for left-out group
+- Calculate $\text{MSE}_i = \frac{1}{n} \sum\limits_{i=1}^n \left(y_i - \hat{y}_i \right)^2$ 
+- Calculate test error as average of the $k$ MSE's:
+
+$$CV_{(k)} = \frac{1}{k} \sum\limits_{i=1}^k \text{MSE}_i$$
+
+- Select model that minimises $CV_{(k)}$
+
+
+
+## Regression Trees
+
+\large
+
+- Partition predictor space into regions $R_1, R_2, \ldots, R_J$.
+- If unit falls in region $R_j$, use average outcome in $R_j$ as predicted value -- $\hat{y}_{R_j}$
+- (For "decision" about discrete outcome, count votes in $R_j$)
+- Goal: minimise residual sum of squares (RSS), just like LS regression:
+
+$$\sum\limits_{j=1}^J \sum\limits_{i \in R_j} \left(y_i - \hat{y}_{R_j}\right)$$
+
+## Regression Trees
+
+\large
+
+
+How to define regions $R_j$?
+
+\pause 
+
+- Top-down, greedy recursive binary split
+- At each step, find predictor and cut-point that minimise
+
+$$\sum\limits_{i: x\in R_1(j,s)} \left(y_i - \hat{y}_{R_1(j,s)}\right)^2 +
+\sum\limits_{i:x \in R_2(j,s)}  \left(y_i - \hat{y}_{R_2(j,s)}\right)^2$$
+
+## Random Forests
+
+
+
+# Heterogeneous Treatment Effects
+
+# Variable Selection
 
 ## Slide Title
 
