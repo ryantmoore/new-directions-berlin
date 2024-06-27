@@ -58,9 +58,81 @@ When inputs change, do outputs change?
 
 ## Should we trust our model?
 
-## Estimating all possible regressions
+\large
 
-Idea
+Suppose I present observational results:
+
+\footnotesize
+\begin{table}[!ht]
+\begin{tabular}{lc}
+& Coefficient \\ \hline
+$\geq$ 1000 auto workers      & 0.87     \\
+                              & (0.39)      \\
+DW-NOMINATE                   & -5.04   \\
+                              & (0.53)      \\
+Ford/Chrysler/GM PAC Contribs (log) &        0.15  \\
+                                    &        (0.05)      \\
+AFL-CIO PAC Contribs (log)          &        0.09     \\
+                                    &       (0.04) \\ 
+Intercept & -0.14 \\
+          & (0.30)      \\ \hline
+$N$ & 406         \\
+AIC & 258.59      \\
+BIC & 338.72      \\
+$\log L$    & -109.30     \\ \hline
+\end{tabular}
+\end{table}
+
+<!-- \multicolumn{2}{l}{\footnotesize{Standard errors in parentheses}}\\ -->
+<!-- \end{tabular} -->
+<!-- \caption{Logistic Regression Coefficients of Support for House Roll Call 690, Congressional Session 110.2. Vote on 10 December 2008 for using TARP for auto bailout. Passed 237-170: Democrats 205-20, Republicans 32-150.} -->
+
+\pause 
+\normalsize
+
+What would be your questions?
+
+## Multiplicity of Models
+
+\large
+
+>- For $k$ predictors, there are $2^k$ possible models
+>- For 30 predictors, $10^9$ possible models
+>- ($7\times$ as many km to the sun!)
+>- So, typically, we show
+
+## Multiplicity of Models
+
+\scriptsize
+\begin{table}[!ht]
+ \begin{tabular}{lcccc} \hline 
+  & Model 1 & Model 2 & Model 3 & Model 4 \\ \hline
+Intercept                           & 2.12  & 0.61   & 1.26  & -0.14       \\ 
+                                    & (0.24)       & (0.20)       & (0.31)       & (0.30)      \\ 
+$\geq$ 1000 auto workers           & 0.98   & 1.14   & 0.74      & 0.87    \\ 
+                                    & (0.34)       & (0.37)       & (0.36)       & (0.39)      \\ 
+Republican                          &  &              &  &             \\ 
+                                    & (0.33)       &              & (0.42)    &             \\ 
+DW-NOMINATE                         &              & -4.87 &              & -5.04\\ 
+                                    &              & (0.42)       &              & (0.53)      \\ 
+Ford/Chrysler/GM PAC Contribs (log) &              &              & 0.14   & 0.15 \\ 
+                                    &              &              & (0.05)       & (0.05)      \\ 
+AFL-CIO PAC Contribs (log)          &              &              & 0.14  & 0.09   \\ 
+                                    &              &              & (0.04)       & (0.04)      \\ \hline
+$N$                                 & 407          & 406          & 407          & 406         \\ 
+AIC                                 & 301.48       & 268.76       & 284.11       & 258.59      \\ 
+BIC                                 & 349.58       & 316.83       & 364.29       & 338.72      \\ 
+$\log L$                           & -138.74      & -122.38      & -122.06      & -109.30     
+\\ \hline
+\end{tabular}
+\end{table}
+
+\pause 
+
+\normalsize
+Rather than small set of substantively-informed models, just show them all!
+
+
 
 ## Example 1: Congressional Auto Industry Support
 
@@ -116,6 +188,13 @@ library(olsrr)
 \pause 
 
 @hebbali24
+
+
+## Example 2: Social Pressure Mailers
+
+\pause 
+
+![](figs/02-gg-neighbors.png)
 
 
 ## Example 2: Social Pressure Mailers
@@ -568,7 +647,7 @@ summary(lm(attitude ~ news + pr.anx))$coef |> round(4)
 summary(lm(attitude ~ news))$coef |> round(4)
 ```
 
-<!-- <!-- > summary(lm(lp.mort ~ smoke)) --> 
+<!-- <!--  summary(lm(lp.mort ~ smoke)) --> 
 <!-- <!--             Estimate Std. Error t value Pr(>|t|)     --> 
 <!-- <!-- (Intercept)  0.52174    0.03694   14.13  < 2e-16 *** --> 
 <!-- <!-- smoke        0.37395    0.04850    7.71 1.05e-11 *** --> 
@@ -580,8 +659,8 @@ summary(lm(attitude ~ news))$coef |> round(4)
 
 ## Post-Treatment Bias
 
-<!-- <!-- The roughest, rawest advice.\\ --> 
-<!-- <!-- {\bf Draw the Tr timing arrow.} --> 
+<!-- <!-- The roughest, rawest advice. --> 
+<!-- <!-- Draw the Tr timing arrow. --> 
 
 If you want the effect of $T$ on $Y$,
 
