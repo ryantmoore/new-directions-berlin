@@ -395,14 +395,133 @@ $$CV_{(k)} = \frac{1}{k} \sum\limits_{i=1}^k \text{MSE}_i$$
 - Select model that minimises $CV_{(k)}$
 
 
+## CV for Linear Model
+
+```{r}
+library(tidyverse)
+
+## Make data
+
+mk_data <- function(n = 90, n_folds = 10){
+  
+  df <- tibble(
+    x1 = rnorm(n),
+    x2 = rnorm(n), 
+    x3 = rnorm(n), 
+    y = 0.1 * x1 + 0.2 * x2 + 0.5 * x3 + rnorm(n),
+    cv_fold = sample(rep(1:n_folds, (n / n_folds)))
+  )
+  
+}
+
+df <- mk_data()
+```
+
+## CV for Linear Model
+
+```{r}
+head(df)
+```
+
+\pause 
+
+```{r}
+table(df$cv_fold)
+```
+
+
+## CV for Linear Model
+
+```{r}
+cv_lm <- function(data, fmla){
+  
+  n_folds <- max(data$cv_fold)
+  store_mses <- vector("numeric", length = n_folds)
+  
+  for(idx in 1:n_folds){
+    
+    df_train <- data |> filter(cv_fold != idx)
+    df_test <- data |> filter(cv_fold == idx)
+  
+    lm_out <- lm(fmla, data = df_train)
+  
+    predictions <- predict(lm_out, newdata = df_test)
+    
+    store_mses[idx] <- mean((df_test$y - predictions)^2)}
+
+  test_error_cv_k <- mean(store_mses)
+  return(test_error_cv_k)
+}
+```
+
+## CV for Linear Model
+
+\large
+
+```{r}
+cv_lm(data = df, fmla = y ~ x1 + x2)
+```
+
+\pause 
+
+```{r}
+df <- mk_data()
+cv_lm(df, y ~ x1 + x2)
+```
+
+\pause 
+
+```{r}
+df <- mk_data()
+cv_lm(df, y ~ x1 + x2 + x3)
+```
+
+## CV for Linear Model
+
+```{r}
+#| echo: false
+#| fig-cap: "MSE always less (better) for 3-variable model."
+#| fig-height: 6
+
+set.seed(631537784)
+
+n_iter <- 100
+
+mses_2var <- mses_3var <- vector("numeric", length = 100)
+
+for(idx in 1:n_iter){
+  df <- mk_data()
+  mses_2var[idx] <- cv_lm(df, y ~ x1 + x2)
+  mses_3var[idx] <- cv_lm(df, y ~ x1 + x2 + x3)
+}
+
+mses <- tibble(mses_2var, 
+               mses_3var, 
+               difference = mses_3var - mses_2var)
+
+ggplot(mses, aes(difference)) + 
+  geom_histogram() + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(x = "(MSE 3-var model) - (MSE 2-var model). 100 data sets.")
+
+# Long version:
+# mses <- mses |> pivot_longer(cols = starts_with("mses"),
+#                              names_to = "model") |>
+#   mutate(model = case_when(model == "mses_2var" ~ "y ~ x1 + x2", TRUE ~ "y ~ x1 + x2 + x3"))
+
+# ggplot(mses, aes(value, model)) + 
+#  geom_violin(draw_quantiles = c(.25, .5, .75))
+```
+
+
 
 ## Regression Trees
 
 \large
 
 - Partition predictor space into regions $R_1, R_2, \ldots, R_J$.
-- If unit falls in region $R_j$, use average outcome in $R_j$ as predicted value -- $\hat{y}_{R_j}$
-- (For "decision" about discrete outcome, count votes in $R_j$)
+- If unit falls in region $R_j$, use average outcome in $R_j$ as predicted value: $\hat{y}_{R_j}$
+- (For _decision_ on discrete outcome, count votes in $R_j$)
 - Goal: minimise residual sum of squares (RSS), just like LS regression:
 
 $$\sum\limits_{j=1}^J \sum\limits_{i \in R_j} \left(y_i - \hat{y}_{R_j}\right)$$
@@ -421,6 +540,157 @@ How to define regions $R_j$?
 
 $$\sum\limits_{i: x\in R_1(j,s)} \left(y_i - \hat{y}_{R_1(j,s)}\right)^2 +
 \sum\limits_{i:x \in R_2(j,s)}  \left(y_i - \hat{y}_{R_2(j,s)}\right)^2$$
+
+## Regression Trees
+
+\Large
+
+>- Overfitting is a potential problem 
+>- Can we increase predictive quality by only using _part_ of a tree?
+>- "Pruning"
+
+## Regression Trees
+
+Pruning
+
+>- Build a large tree
+>- Select the subtree that gives least prediction error (via cross-validation)
+>- But, many possible subtrees, so penalise larger trees via $\alpha$
+>- $\alpha$: penalty parameter
+>- $|T|$: count of terminal nodes of $T$
+>- $m$: terminal node index
+>- Find subtree that minimises \pause 
+
+$$\sum\limits_{m=1}^{|T|} \sum\limits_{i:x_i \in R_m} \left(y_i - \hat{y}_{R_m} \right)^2 + \alpha |T|$$
+\pause 
+
+Sum squared pred. error (plus penalty that grows with tree size) across units in region, then regions. 
+
+## Regression Trees
+
+\large
+
+But, how to choose $\alpha$? (Use cross-validation.)
+
+1. Build big tree on training data (with some minimum terminal node size) \pause 
+2. For several values of $\alpha$, find best subtree. \pause 
+3. Find best value of $\alpha$ via CV. Create $K$ folds. Then \pause \newline
+3a. Do 1 and 2 on all but $k$th fold  \pause  
+\newline 
+3b. Predict for $k$th fold, calculate MSE for several values of $\alpha$  \pause  \newline
+3c. Get avg MSE for each $\alpha$  \pause \newline
+3d. Pick $\alpha$ to minimise MSE  \pause \newline
+4. Using that $\alpha$, select best subtree from Step 2
+
+## Example: Regression Tree
+
+```{r}
+library(qss)
+library(rsample)
+library(tree)
+
+data("MPs")
+mps <- MPs |> mutate(age = yod - yob,
+                     is_labour = if_else(party == "labour", 1, 0),
+                     is_london = if_else(region == "Greater London", 1, 0), 
+                     is_winner = if_else(margin > 0, 1, 0)) |>
+  select(ln.net, age, is_labour, is_london, is_winner) |> 
+  na.omit()
+
+set.seed(765076184)
+
+mp_split <- initial_split(mps, prop = 0.7)
+
+mp_train <- training(mp_split)
+mp_test <- testing(mp_split)
+
+tree_mp <- tree(ln.net ~ ., data = mp_train)
+```
+
+## Example: Regression Tree
+
+```{r}
+#| fig-cap: "The regression tree (for training data)"
+
+plot(tree_mp)
+text(tree_mp)
+```
+
+## Example: Regression Tree
+
+\large
+Would pruning help?
+
+```{r}
+#| fig-cap: "Subtree size 2 minimises SSR"
+#| fig-height: 4
+cv_mps <- cv.tree(tree_mp, K = 10)
+
+plot(cv_mps$size, cv_mps$dev, type = "b")
+```
+
+\pause 
+Yes. So prune at $|T| = 2$.
+
+## Example: Regression Tree
+
+```{r}
+#| fig-cap: "The pruned tree"
+#| fig-height: 3
+
+prune_mps <- prune.tree(tree_mp, best = 2)
+
+plot(prune_mps)
+text(prune_mps)
+```
+
+## Example: Regression Tree
+
+\large
+
+Predict for test set:
+
+```{r}
+#| echo: false
+mps_preds_full <- predict(tree_mp, newdata = mp_test)
+mps_preds_prune <- predict(prune_mps, newdata = mp_test)
+
+df_mp_preds <- tibble(
+  preds_full = mps_preds_full,
+  preds_prune = mps_preds_prune,
+  observed = mp_test$ln.net
+)
+
+# pl_full <- ggplot(df_mp_preds, aes(preds_full, observed)) + geom_point() 
+
+# pl_full +
+#   geom_point(aes(preds_prune, observed), shape = 2)
+```
+
+```{r}
+#| echo: false
+mse_full <- mean((df_mp_preds$observed - df_mp_preds$preds_full)^2)
+
+mse_prune <- mean((df_mp_preds$observed - df_mp_preds$preds_prune)^2)
+```
+
+- MSE for pruned: `r round(mse_prune, 3)`
+- MSE for full: `r round(mse_full, 3)`
+
+\pause 
+
+So, pruning helped us avoid some overfitting. 
+
+\pause 
+
+(Typical pred error of $\sqrt{`r round(mse_prune, 3)`} \approx `r round(sqrt(mse_prune), 3)`$)
+
+\pause 
+(Bigger than IQR of `r round(IQR(mps$ln.net), 3)`, but range covers $\left[ `r round(min(mps$ln.net), 2)`, `r round(max(mps$ln.net), 2)`
+ \right]$.)
+ 
+ \pause 
+(Pretty good for 1 split!?)
 
 ## Random Forests
 
