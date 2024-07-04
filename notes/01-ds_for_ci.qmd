@@ -11,7 +11,8 @@ format:
     fonttheme: serif
     include-in-header:
       - text: | 
-          \usepackage{wasysym} 
+          \usepackage{wasysym}
+          \newcommand{\independent}{\perp\mkern-9.5mu\perp}
     section-titles: true
     toc: true
 institute:
@@ -694,9 +695,266 @@ So, pruning helped us avoid some overfitting.
 
 ## Random Forests
 
+\large
 
+Next: random forest algorithm
+
+\pause 
+
+Ensemble learning algorithms:
+
+\pause 
+
+>- Boosting: models build on prior models $\rightsquigarrow$ pick feature, predict, upweight mispredicted data, .... Do several times and combine.
+>- Bagging: (random select units, model) $\to$ many times. No building.
+
+\pause 
+Random Forests are bagging algorithms.
+
+\pause 
+
+_Bagging_: \textit{b}ootstrap \textit{agg}regation
+
+## Random Forests
+
+\Large
+Why bag?
+
+\pause 
+
+>- Trees are low bias, high variance  
+(diff answers, depend on data split)
+>- Bagging averages over data subsets, reducing variance
+>- (Linear regression: lower variance)
+
+## Random Forests
+
+\Large
+Random forests: decorrelated, bagged trees
+
+\pause 
+
+>- Take bootstrapped training subsample
+>- Build deep tree. At each split, _randomly sample_ $m$ of $p$ predictors, build split from only those $m$.
+>- (Often choose $m \approx \sqrt{p}$)
+>- So, different splits consider different predictors
+>- So, trees will look very different to each other
+
+## Example: Random Forests
+
+\large
+
+```{r}
+library(randomForest)
+
+# Full bag:
+bag_mps <- randomForest(ln.net ~ ., data = mp_train,
+                        ntree = 500, mtry = 4, 
+                        importance = TRUE)
+
+# Decorrelate:
+rf_mps <- randomForest(ln.net ~ ., data = mp_train,
+                        ntree = 500, mtry = 2, 
+                       importance = TRUE)
+```
+
+## Example: Random Forests
+
+\large
+
+Predict:
+```{r}
+preds_bag <- predict(bag_mps, newdata = mp_test)
+
+preds_rf <- predict(rf_mps, newdata = mp_test)
+```
+
+```{r}
+#| echo: false
+
+mse_bag <- mean((mp_test$ln.net - preds_bag)^2)
+
+mse_rf <- mean((mp_test$ln.net - preds_rf)^2)
+```
+
+- MSE for RF: `r round(mse_rf, 3)`
+- MSE for full bag: `r round(mse_bag, 3)`
+
+\pause 
+
+So, decorrelating helped us avoid some overfitting to each bootstrap subsample (and thus, reduced variance).
+
+\pause 
+
+(Typical pred error of $\sqrt{`r round(mse_rf, 3)`} \approx `r round(sqrt(mse_rf), 3)`$)
+
+\pause 
+(Bigger than IQR of `r round(IQR(mps$ln.net), 3)`, but range covers $\left[ `r round(min(mps$ln.net), 2)`, `r round(max(mps$ln.net), 2)`
+ \right]$.)
 
 # Heterogeneous Treatment Effects
+
+## Homogeneous and Heterogeneous Effects
+
+\large
+
+>- Most causal inference starts at _average treatment effects_
+>- Average may be interesting on its own, \ldots \pause but often masks assumption of _homogeneous_ effects
+>- Notationally, often assume $\tau_i = \tau \quad \forall i$
+>- But, _heterogeneous_ effects often of central interest
+>- Different effects for different groups
+>    - Subgroup variability (research)
+>    - Targeting resources (campaigns, marketing)
+>    - Constituency effects (public policy)
+>- Notationally, $\exists i: \tau_i \neq \tau$
+
+## Homogeneous and Heterogeneous Effects: Estimation
+
+Homogeneous effects:
+
+## Homogeneous and Heterogeneous Effects: Detection
+
+Heterogeneous effects:
+
+## CATEs: Conditional ATEs
+
+
+## Homogeneous and Heterogeneous Effects: Estimation
+
+Heterogeneous effects:
+
+## Causal Forests
+
+\large
+
+>- Our regression trees had terminal nodes ("leaves") that were sufficiently homogeneous for prediction.
+>- Use $\hat{y}_{R_j}$ as pred value for obs in $R_j$
+>- (Tory, winner, London $\to 13.84$)
+>- $$\hat{y}_{R_j} = \frac{1}{|R_j|} \sum\limits_{i \in R_j} Y_i$$
+
+## Causal Forests
+
+\large
+
+>- Similarly, consider each leaf $R_j$ small, homogeneous enough that potential outcomes independent
+>- Treateds in $R_j$ provide good estimates of what controls in $R_j$ would have done under treatment
+>- Controls in $R_j$ provide good estimates of what treateds in $R_j$ would have done under control
+>- Assignment w/in leaf $R_j$ is as-good-as-random
+>- I.e., each leaf contains an experiment
+
+\pause 
+
+$$Y(0), Y(1) \independent T | \bf X $$
+
+## Causal Forests
+
+\large
+
+>- Let $\{T, R_j\} = \{i: T_i = 1, i \in R_j \}$ \quad (Tr obs in $R_j$)
+>- Let $\{C, R_j\} = \{i: T_i = 0, i \in R_j \}$ \quad (Co obs in $R_j$)
+>- Natural estimation of \pause 
+
+$$\hat{\bar{\tau}}_{R_j} = \frac{1}{|\{T, R_j\}|} \sum\limits_{\{T, R_j \}} Y_i -  \frac{1}{|\{C, R_j\}|} \sum\limits_{\{C, R_j \}} Y_i$$
+
+\pause 
+So, we can use RF methods to estimate conditional (heterogeneous) treatment effects, CATEs.
+
+\pause 
+
+\center
+\smiley
+
+\pause 
+\ldots
+
+
+## Causal Forests: Honesty
+
+\large
+
+>- But need one more thing for asymptotics to work out \ldots
+>- Each tree must be _honest_
+>- Each unit $i$ _either_ 
+>    - used to determine tree splits, _or_
+>    - used to estimate $\hat{\bar{\tau}}_{R_j}$
+>- But **not both**!
+>- One way: "Double-sample" causal trees
+>    - Split training data into $\mathcal{I}$ and $\mathcal{J}$
+>    - Splits chosen to maximise variance on $\hat{\bar{\tau}} \text{ for } i \in \mathcal{J}$
+>    - Splitting cannot use $y_i$ from $\mathcal{I}$
+>    - Prediction, estimation of $\hat{\bar{\tau}}$ uses only $\mathcal{I}$
+>- Build a random forest (decorrelated deep trees picking from $m$ predictors) of causal trees
+
+## Example: Causal Forests
+
+```{r}
+#| eval: true
+
+library(grf)
+
+X <- mp_train |> select(age, is_labour, is_london)
+
+W <- mp_train |> select(is_winner) |> unlist() |> as.numeric() 
+
+Y <- mp_train |> select(ln.net) |> unlist() 
+
+cf_out <- causal_forest(X, Y, W)
+```
+
+## Example: Causal Forests
+
+\large 
+
+```{r}
+X_test <- mp_test |> select(age, is_labour, is_london)
+
+cf_preds <- predict(cf_out, X_test)$predictions
+
+df_cf <- tibble(X_test, 
+                cf_te = cf_preds)
+```
+
+## Example: Causal Forests
+
+```{r}
+#| echo: false
+#| fig-height: 6
+
+ggplot(df_cf, aes(factor(is_labour), cf_te)) + 
+  geom_violin(draw_quantiles = (1:3) / 4) +
+  labs(x = "Is Labour?", y = "Honest CF Estimated Treatment Effect")
+
+tory_mean_cf_te <- mean(df_cf$cf_te[df_cf$is_labour == 0])
+
+labour_mean_cf_te <- mean(df_cf$cf_te[df_cf$is_labour == 1])
+```
+
+\pause 
+- Mean CF TE, Tory: `r round(tory_mean_cf_te, 3)` \pause $\rightsquigarrow \pounds `r formatC(round(exp(median(mps$ln.net) + tory_mean_cf_te) - exp(median(mps$ln.net)), -3), format = "f", digits = 0, big.mark = ",")`$ \pause 
+- Mean CF TE, Labour: `r round(labour_mean_cf_te, 3)` \pause $\rightsquigarrow \pounds `r formatC(round(exp(median(mps$ln.net) + labour_mean_cf_te) - exp(median(mps$ln.net)), -3), format = "f", digits = 0, big.mark = ",")`$ 
+
+
+## Example: Causal Forests
+
+```{r}
+#| echo: false
+
+ggplot(df_cf, aes(factor(is_london), cf_te)) + 
+  geom_violin(draw_quantiles = (1:3) / 4) +
+  labs(x = "Is London?", y = "Honest CF Estimated Treatment Effect")
+```
+
+## Example: Causal Forests
+
+```{r}
+#| echo: false
+
+ggplot(df_cf, aes(x = sort(age), y = sort(cf_te))) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) + 
+  labs(x = "Age at Death", y = "Honest CF Estimated Treatment Effect")
+```
+
 
 # Variable Selection
 
