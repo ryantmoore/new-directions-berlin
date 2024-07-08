@@ -30,6 +30,7 @@ bibliography: "../admin/main.bib"
 
 library(broom)
 library(dagitty)
+library(estimatr)
 library(ggdag)
 library(here)
 library(tidyverse)
@@ -799,7 +800,7 @@ So, decorrelating helped us avoid some overfitting to each bootstrap subsample (
 \large
 
 >- Most causal inference starts at _average treatment effects_
->- Average may be interesting on its own, \ldots \pause but often masks assumption of _homogeneous_ effects
+>- Average may be interesting on its own, \ldots \pause but often masks assumption of _homogeneous_ effects \pause 
 >- Notationally, often assume $\tau_i = \tau \quad \forall i$
 >- But, _heterogeneous_ effects often of central interest
 >- Different effects for different groups
@@ -812,16 +813,82 @@ So, decorrelating helped us avoid some overfitting to each bootstrap subsample (
 
 Homogeneous effects:
 
+$$\text{Outcome} = \beta_0 + \beta_1 \text{Treatment} + \epsilon$$
+
+\pause 
+
+```{r}
+lm_out <- lm(ln.net ~ is_winner, data = mps)
+lm_out
+```
+
+## Homogeneous and Heterogeneous Effects: Estimation
+
+\large 
+
+Homogeneous effects:
+
+```{r}
+t.test(ln.net ~ is_winner, data = mps)
+```
+
+
+## Homogeneous and Heterogeneous Effects: Estimation
+
+Homogeneous effects:
+
+$$\text{Outcome} = \beta_0 + \beta_1 \text{Treatment} + \sum \beta_j X_j +  \epsilon$$
+
+\pause 
+
+```{r}
+lm_out <- lm(ln.net ~ is_winner + is_labour + 
+               is_london + age, data = mps)
+lm_out
+```
+
+## Homogeneous and Heterogeneous Effects: Estimation
+
+Homogeneous effects:
+
+```{r}
+lm_lin(ln.net ~ is_winner, covariates = ~ is_labour + is_london + age, data = mps)
+```
+
+
+
 ## Homogeneous and Heterogeneous Effects: Detection
 
 Heterogeneous effects:
 
 ## CATEs: Conditional ATEs
 
+\Large
+
+>- _Conditional average treatment effect_ (CATE): avg treatment effect for subset of population
+>- Sometimes "CACE"
+>- Inference: not "evidence against $\text{TE} = 0$?", but "evidence against $\text{CATE}_1 = \text{CATE}_2$?"
 
 ## Homogeneous and Heterogeneous Effects: Estimation
 
 Heterogeneous effects:
+
+$$\text{Outcome} = \beta_0 + \beta_1 \text{Treatment} + \beta_2 \text{Group} + \beta_3 \text{Treatment} \cdot \text{Group}  + \epsilon$$
+
+\pause 
+>- $\beta_1$ gives TE for `Group == 0` 
+>- $\beta_1 + \beta_3$ gives TE for `Group == 1` 
+
+## Homogeneous and Heterogeneous Effects: Estimation
+
+Heterogeneous effects:
+
+```{r}
+lm_out <- lm(ln.net ~ is_winner * is_labour + 
+               is_london + age, data = mps)
+coef(lm_out) |> round(3)
+```
+
 
 ## Causal Forests
 
@@ -864,9 +931,6 @@ So, we can use RF methods to estimate conditional (heterogeneous) treatment effe
 \center
 \smiley
 
-\pause 
-\ldots
-
 
 ## Causal Forests: Honesty
 
@@ -894,7 +958,8 @@ library(grf)
 
 X <- mp_train |> select(age, is_labour, is_london)
 
-W <- mp_train |> select(is_winner) |> unlist() |> as.numeric() 
+W <- mp_train |> select(is_winner) |> 
+  unlist() |> as.numeric() 
 
 Y <- mp_train |> select(ln.net) |> unlist() 
 
@@ -908,13 +973,19 @@ cf_out <- causal_forest(X, Y, W)
 ```{r}
 X_test <- mp_test |> select(age, is_labour, is_london)
 
-cf_preds <- predict(cf_out, X_test)$predictions
+cf_pred_est_var <- predict(cf_out, X_test, 
+                           estimate.variance = TRUE)
+
+cf_preds <- cf_pred_est_var$predictions
 
 df_cf <- tibble(X_test, 
-                cf_te = cf_preds)
+                cf_te = cf_preds,
+                cf_se = sqrt(cf_pred_est_var$variance.estimates),
+                te_1se_lower = cf_te - cf_se,
+                te_1se_upper = cf_te + cf_se)
 ```
 
-## Example: Causal Forests
+## Example: Causal Forests Results, Party
 
 ```{r}
 #| echo: false
@@ -934,7 +1005,7 @@ labour_mean_cf_te <- mean(df_cf$cf_te[df_cf$is_labour == 1])
 - Mean CF TE, Labour: `r round(labour_mean_cf_te, 3)` \pause $\rightsquigarrow \pounds `r formatC(round(exp(median(mps$ln.net) + labour_mean_cf_te) - exp(median(mps$ln.net)), -3), format = "f", digits = 0, big.mark = ",")`$ 
 
 
-## Example: Causal Forests
+## Example: Causal Forests Results, London
 
 ```{r}
 #| echo: false
@@ -944,16 +1015,30 @@ ggplot(df_cf, aes(factor(is_london), cf_te)) +
   labs(x = "Is London?", y = "Honest CF Estimated Treatment Effect")
 ```
 
-## Example: Causal Forests
+## Example: Causal Forests Results, Age
 
 ```{r}
 #| echo: false
 
-ggplot(df_cf, aes(x = sort(age), y = sort(cf_te))) + 
+ggplot(df_cf, aes(x = age, y = cf_te)) + 
+  geom_point(aes(colour = factor(is_labour))) + 
+  geom_smooth(aes(colour = factor(is_labour)), se = FALSE) + 
+  labs(x = "Age at Death", y = "Honest CF Estimated Treatment Effect")
+```
+
+## Example: Causal Forests Results, Age
+
+```{r}
+#| echo: false
+
+ggplot(df_cf, aes(x = age, y = cf_te)) + 
   geom_point() + 
+  geom_errorbar(aes(ymin = te_1se_lower, 
+                    ymax = te_1se_upper)) +
   geom_smooth(se = FALSE) + 
   labs(x = "Age at Death", y = "Honest CF Estimated Treatment Effect")
 ```
+
 
 
 # Variable Selection
@@ -981,9 +1066,11 @@ Thanks!
 
 \large
 
-\center
-`rtm@american.edu`  
-`www.ryantmoore.org`  
+\begin{center}
+\texttt{rtm@american.edu} \\
+\texttt{www.ryantmoore.org}
+\end{center}
+
 
 ## References {.allowframebreaks}
 
