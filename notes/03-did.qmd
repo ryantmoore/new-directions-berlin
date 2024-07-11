@@ -12,13 +12,12 @@ format:
     include-in-header:
       - text: | 
           \usepackage{wasysym} 
-      - file: zzz_beamer_header.tex
     section-titles: true
     toc: true
 institute:
   - American University
   - The Lab @ DC
-bibliography: "main.bib"
+bibliography: "../admin/main.bib"
 ---
 
 ```{r}
@@ -32,11 +31,536 @@ library(here)
 library(tidyverse)
 ```
 
-# Section Title Page
+# Canonical Diff-in-Diff Designs, Calloway-Sant'Anna
 
-## Slide Title
+## Canonical Difference-in-Difference Designs
 
-Material.
+\large
+
+>- Goal: observational causal statements by adjusting for confounding
+>- (Similar to matching, regression, etc.)
+>- Confounding must be "equi-additive"
+>    - same amt added to outcome over time in both Tr/Co 
+>- Adjustment using a "negative outcome control"
+>    - pre-tr outcome cannot be affected by treatment
+>    - pre-tr outcome affected by (obs/unobs) predictors of post-tr outcome
+
+## Canonical Difference-in-Difference Designs
+
+\large
+
+Before-After Designs:
+
+>- Before-After designs ask "Did the outcome go up or down?"  
+>- In NJ minwage study (@carkru94), Before-After: "After the new minimum wage, did employment rise or fall in NJ?"
+>- The Before-After estimate for NJ:
+
+\pause 
+
+$$\text{Before-After estimate} = \overline{\text{Employment}}_{T}^{\text{After}} - \overline{\text{Employment}}_{T}^{\text{Before}}$$ 
+
+\pause
+
+What's weak about this question? What's being ignored?
+
+\pause 
+
+This is **not**
+
+$$ATT = \overline{[Y(1) | T = 1]} - \overline{[Y(0) | T = 1]}$$
+
+Why not?
+
+## Canonical Difference-in-Difference
+
+>- DiD estimate: difference between two Before-After estimates  
+>- DiD: Before-After estimate for NJ, subtract off change that occurred in control state, PA.  
+
+\pause 
+
+\begin{eqnarray*} 
+\text{DiD estimate} & = & (\overline{Y}_{T}^{\text{After}} - \overline{Y}_{T}^{\text{Before}}) - (\overline{Y}_{C}^{\text{After}} - \overline{Y}_{C}^{\text{Before}})  \\ \pause 
+& = &  (\underbrace{\overline{Y}_{NJ}^{\text{After}} - \overline{Y}_{NJ}^{\text{Before}}}_{\text{Change in Treated}}) - (\underbrace{\overline{Y}_{PA}^{\text{After}} - \overline{Y}_{PA}^{\text{Before}}}_{\text{Change in Control}}) 
+\end{eqnarray*}
+
+\pause 
+
+>- Change in Control: removes part of change in emp that would have occurred anyway, in absence of law change. 
+>- (Economy growing, or fast food restaurants hit by health scares and lay off workers, \ldots)
+
+
+## Canonical Difference-in-Difference
+
+>- Before-After uses 2 pieces of info; DiD design uses 4
+>- Change in Control is our estimate of what _would have happened_ in treated unit (NJ), in absence of treatment
+>- Key assumption: "parallel trends" -- change in PA is what change in NJ _would have been_ without new minimum wage. 
+
+\pause 
+
+![The change in PA (control, in \textcolor{red}{red}) is what we assume would have happened in NJ (treated, dotted $- -$), in the absence of the law change.  This is an assumption of "parallel trends". The black segment for NJ shows what actually happened.  \label{f:did}](figs/03-rand_obs_did.png){height=60%} 
+
+
+## Self-Reported Health in _Seguro Popular_ Evaluation
+
+King, et al. (2007)
+
+![](figs/03-KGRfig5b.jpg){height=80% fig-align="center"}
+
+<!--   \item Effect of assignment on outcomes at baseline for poor families.  Without (open circles) and with (closed disks) covariate adjustment; diamonds represent the average for each category. -->
+<!-- \item Concern with Health Self-Assessment  -->
+<!--   \begin{itemize} -->
+<!--   \item But it's state-of-the-art anchoring vignettes! -->
+
+
+## Simplified Example
+
+![](figs/03-exSPdid.pdf){fig-align="center" height=90%}
+
+<!-- Say -->
+<!--   \begin{itemize} -->
+<!--   \item True baseline health of everyone is 3. -->
+<!--   \item Poor report better health to allay fears about program -->
+<!--     cost. -->
+<!--   \item Rich report worse health to try to get program. -->
+<!--   \item Program has causal effect of 1. -->
+<!--   \item Secular health increases of 1.   -->
+<!--   \end{itemize} -->
+<!-- Then -->
+<!-- \begin{itemize} -->
+<!-- \item Naive estimate of ``after'' difference is $7-2=5$. -->
+<!-- \end{itemize} -->
+
+
+## Simplified Example
+
+![](figs/03-exSPdidBrack.pdf){fig-align="center" height=90%}
+
+<!-- \begin{itemize} -->
+<!-- \item Diff-in-Diffs Estimate: Tr Diff $-$ Co Diff $=(7-5) - (2-1) = 2-1=1$ -->
+<!-- \item Diff-in-Diffs estimate of effect removes bias from -->
+<!--   \begin{itemize} -->
+<!--   \item different baseline reporting tendencies\\ (general baseline -->
+<!--     difference in levels) -->
+<!--   \item secular trend -->
+<!--   \end{itemize} -->
+
+<!-- \item (Naive estimate of ``after'' difference is $7-2=5$.) -->
+<!-- \end{itemize} -->
+<!-- (Assumps:) -->
+<!--   \begin{itemize} -->
+<!--   \item (True baseline health $= 3$.   Program effect $= 1$. Secular increases $= 1$.  ) -->
+<!--   \item (Poor report better health. Rich report worse health.) -->
+<!--   \end{itemize} -->
+
+
+## The Difference-in-Differences Estimator
+
+\begin{center}
+\begin{tabular}{cccc}
+& Outcome & Outcome & \\
+Units & Before & After & Difference \\ \hline
+Treated & $\bar{Y}^{T_B}$ & $\bar{Y}^{T_A}$ & $\bar{Y}^{T_A} - \bar{Y}^{T_B}$ \\ 
+Control & $\bar{Y}^{C_B}$ & $\bar{Y}^{C_A}$ & $\bar{Y}^{C_A} - \bar{Y}^{C_B}$   \\ \hline
+& $\bar{Y}^{T_B} - \bar{Y}^{C_B}$ & $\bar{Y}^{T_A} - \bar{Y}^{C_A}$ & $(\bar{Y}^{T_A} - \bar{Y}^{T_B}) - (\bar{Y}^{C_A} - \bar{Y}^{C_B})$
+\end{tabular}
+\end{center}
+
+
+<!-- # Example: Card \& Krueger -->
+
+## Example: Effect of Minimum Wage on Employment
+
+The Baseline
+
+<!-- - Before: Feb 92. -->
+<!-- - Black = NJ, grey = PA -->
+
+![](figs/03-KCfig1a.jpg){height=90%}
+
+
+## Example: Effect of Minimum Wage on Employment
+
+The Policy Change: Significant Shock
+
+![](figs/03-KCfig1b.jpg){height=90%}
+
+
+## Example: Effect of Minimum Wage on Employment
+
+
+![](figs/03-KCtab3.jpg)
+
+<!-- # Extension: Regression DiD -->
+
+## Extension 1: Regression Difference-in-Differences
+
+<!-- Logic of {\bf Then}: -->
+<!-- \begin{itemize} -->
+<!-- \item If $T=1$ and $A=1$, then expected $y_i$ is sum of all $\beta$ -->
+<!-- \item If $T=1$ and $A=0$, then expected $y_i$ -->
+<!-- \item If $T=0$ and $A=1$, then expected $y_i$ -->
+<!-- \item If $T=0$ and $A=0$, then expected $y_i$ -->
+<!-- \end{itemize} -->
+
+<!-- See {\tt did.R}. -->
+
+Let  
+
+- $T_i \in \{0, 1\}$ be treatment status ("ever-treated")  
+- $A_i \in \{0, 1\}$ be "after" period status
+
+\pause
+
+\footnotesize
+
+Model
+$$y_i = \beta_0 + \beta_1 T_i + \beta_2 A_i + \beta_3 T_i A_i + \epsilon_i$$
+
+\pause
+
+Then
+\begin{eqnarray*}
+  \bar{Y}^{T_A} &  = &  \beta_0 + \beta_1 + \beta_2 + \beta_3 \\
+  \bar{Y}^{T_B} &  = &  \beta_0 + \beta_1 \\
+  \bar{Y}^{C_A} &  = &  \beta_0 + \beta_2 \\
+  \bar{Y}^{C_B} &  = &  \beta_0 
+\end{eqnarray*} \pause 
+And
+\begin{eqnarray*}
+(\bar{Y}^{T_A} - \bar{Y}^{T_B})  - (\bar{Y}^{C_A} - \bar{Y}^{C_B}) & = & ([\beta_0 + \beta_1 +
+\beta_2 + \beta_3] - [\beta_0 + \beta_1] ) \\ && - ([\beta_0 + \beta_2] - \beta_0) \\
+& = & (\beta_2 + \beta_3) - (\beta_2) \\
+& = & \beta_3
+\end{eqnarray*}
+
+## Extension 1: Regression Difference-in-Differences
+
+\large
+Note: $T_i \in \{0, 1\}$ needs to be "ever-treated"  
+(not "currently treated")
+
+Simulation:
+
+* 40 units (20 Tr, 20 Co)
+* 2 time periods (2018, 2022)
+* Baseline outcome difference Tr $-$ Co $= 1$
+* True TE $= 2$
+* (TE occurs in 2022, only for Tr)
+
+<!-- * See `09-did.R` -->
+
+## Extension 1: Regression Difference-in-Differences
+
+![Simulated Data DiD](figs/03-did_sim.pdf)
+
+## Extension 1: Regression Difference-in-Differences
+
+Two possible regressions:
+
+\small
+
+$$Y = \beta_0 + \beta_1 (2022) + \beta_2  (\text{TrEver}) + \beta_3 (2022 \times \text{TrEver})$$
+\pause 
+
+\center
+versus
+
+
+\begin{eqnarray*}
+Y & = & \beta_0 + \beta_1 (2022) + \beta_2 (\text{TrNow}) + \beta_3 (2022 \times \text{TrNow})
+\end{eqnarray*}
+
+## Extension 1: Regression Difference-in-Differences
+
+\tiny
+\begin{table}[!htbp] \centering 
+  \caption{Ever-treated vs. Currently-treated DiD Regressions} 
+  \label{didtable} 
+\begin{tabular}{@{\extracolsep{5pt}}lcc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{2}{c}{Outcome} \\ 
+\cline{2-3} 
+\\[-1.8ex] & \multicolumn{2}{c}{y} \\ 
+\\[-1.8ex] & (1) & (2)\\ 
+\hline \\[-1.8ex] 
+ 2022 & 0.500 & 0.150 \\ 
+  & (0.313) & (0.278) \\ 
+  & & \\ 
+ Tr (Ever) & 0.700$^{**}$ &  \\ 
+  & (0.313) &  \\ 
+  & & \\ 
+ 2022 x Tr (Ever) & 2.000$^{***}$ &  \\ 
+  & (0.442) &  \\ 
+  & & \\ 
+ Tr (Now) &  & 2.700$^{***}$ \\ 
+  &  & (0.321) \\ 
+  & & \\ 
+ 2022 x Tr (Now) &  &  \\ 
+  &  &  \\ 
+  & & \\ 
+ (Intercept) & 0.462$^{**}$ & 0.812$^{***}$ \\ 
+  & (0.221) & (0.160) \\ 
+  & & \\ 
+\hline \\[-1.8ex] 
+Observations & 80 & 80 \\ 
+R$^{2}$ & 0.623 & 0.598 \\ 
+Adjusted R$^{2}$ & 0.608 & 0.588 \\ 
+Residual Std. Error & 0.989 (df = 76) & 1.015 (df = 77) \\ 
+F Statistic & 41.827$^{***}$ (df = 3; 76) & 57.261$^{***}$ (df = 2; 77) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{2}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table} 
+
+## Extension 1: Regression Difference-in-Differences
+
+\small
+
+$$Y = \underbrace{0.46}_{\text{Co Mean 2018}} + \underbrace{0.5}_{\text{Time Trend}} (2022) + \underbrace{0.7}_{\text{Baseline Diff}} (\text{TrEver}) + \underbrace{2}_{\widehat{ATT}} (2022 \times \text{TrEver})$$
+\pause 
+
+\center
+versus
+
+
+\begin{eqnarray*}
+Y & = & \underbrace{0.81}_{\text{Part of Co Mean 2018 + Time Trend??}} + \underbrace{0.15}_{\text{Rest of Time Trend??}} (2022) + \\
+& & \underbrace{2.7}_{\text{Baseline Diff } + \widehat{ATT}??} (\text{TrNow}) + \underbrace{NA}_{\text{Unest Interaction for } \widehat{ATT}??}(2022 \times \text{TrNow})
+\end{eqnarray*}
+
+
+## Extension 2: Regression Difference-in-Differences
+
+<!--   \begin{itemize} -->
+<!--   \item $G_i$ is ``will you eventually be in Tr group?'' -->
+<!--   \item At $t=2$, $G_i= T_i$ -- but I'm not thinking about estimating (3) -->
+<!--     \item Reg Var assumes $cor(y_1, \epsilon) = 0$ -->
+<!--       \item[] Change score assumes $cor(y_1, \epsilon^*) < 0$ (since -->
+<!--         if resids increase, \ldots (?)  -->
+<!--   \end{itemize} -->
+
+
+Related:  Use change scores or regressor variable method?  (Allison 90)
+
+\pause 
+\begin{eqnarray}
+  y_{i2}  & = & \alpha + \beta_1 y_{i1} + \beta_2 T_i + \epsilon_i \\
+&&  \nonumber \\ \pause 
+  y_{i1}  & = & \alpha + \gamma G_i + \epsilon_{i1} \\
+  y_{i2}  & = & \alpha + \underbrace{\tau}_{\text{secular trend}} +
+  \gamma G_i + \delta T_i + \epsilon_{i2} \\
+y_{i2}- y_{i1} & = & \tau + \delta T_i + (\epsilon_{i2} - \epsilon_{i1})
+\end{eqnarray}
+
+\pause 
+
+\begin{itemize}
+\item Change score is a DiD estimate
+\item Worse if pretest not very strong, and restriction of $\beta_1 =1$
+  creates bias.
+\item Change score is more restrictive on parameter, but makes different
+  assumption about $Cor(y_1, \epsilon)$.
+\end{itemize}
+
+
+## Extension 3: Regression Difference-in-Differences
+
+Add other covariates:
+
+$$y_i = \beta_0 + \beta_1 T_i + \beta_2 A_i + \beta_3 T_i A_i + \gamma'\bf{x_i} + \epsilon_i$$
+
+\pause
+
+But, careful about inference from SE's with many time periods (@berdufmul04).  
+
+\pause 
+
+(At $\alpha = 0.05$, false findings actually 0.45!)
+
+\pause
+
+Actually, be careful about bias with many time periods, too!  
+
+(See [here](https://bcallaway11.github.io/did/articles/TWFE.html). )
+
+
+## Extension 4: Difference in (Differences-in-Differences)
+
+<!-- \begin{itemize} -->
+<!-- \item Useful:  Different effects of NJ hike for men/women? -->
+<!-- \item Useful: Different effects of NJ-PA change than CA-OR change -->
+<!--   (where no increase happened)? -->
+<!-- \end{itemize} -->
+
+
+>- This is crazy!  (?) \pause
+>- Useful for estimating effect across two subgroups
+>- (E.g., Empl vs. unempl'd; or placebo robustness check if one subgroup should _not_ be affected by treatment)
+
+
+
+## Extension 4: Difference in (Differences-in-Differences)
+
+
+<!--   \begin{itemize} -->
+<!--   \item Group 1: men (NJ/PA, before/after) -->
+<!--   \item Group 2: women (NJ/PA, before/after) -->
+<!--   \end{itemize} -->
+<!-- Placebo: -->
+<!--   \begin{itemize} -->
+<!--   \item Group 1: NJ/PA, before/after -->
+<!--    \item Group 2: CA/OR, before/after NJ wage hike (is there an effect -->
+<!--      of something their should not be an effect of?  NJ wage hike -->
+<!--      shouldn't affect FTE's in CA.) -->
+<!--   \end{itemize} -->
+
+\footnotesize
+Group 1:
+\begin{center}
+\begin{tabular}{cccc}
+& Outcome & Outcome & \\
+Units & Before & After & Difference \\ \hline
+Treated & $T_{1B}$ & $T_{1A}$ & $T_{1A} - T_{1B}$ \\ 
+Control & $C_{1B}$ & $C_{1A}$ & $C_{1A} - C_{1B}$   \\ \hline
+& $T_{1B} - C_{1B}$ & $T_{1A} - C_{1A}$ & {\color{red}$(T_{1A} - T_{1B}) - (C_{1A} - C_{1B})$}
+\end{tabular}
+\end{center}
+
+Group 2:
+\begin{center}
+\begin{tabular}{cccc}
+& Outcome & Outcome & \\
+Units & Before & After & Difference \\ \hline
+Treated & $T_{2B}$ & $T_{2A}$ & $T_{2A} - T_{2B}$ \\ 
+Control & $C_{2B}$ & $C_{2A}$ & $C_{2A} - C_{2B}$   \\ \hline
+& $T_{2B} - C_{2B}$ & $T_{2A} - C_{2A}$ & {\color{blue}$(T_{2A} - T_{2B}) - (C_{2A} - C_{2B})$}
+\end{tabular}
+\end{center}
+
+
+DiDiD Estimate:  
+
+\center
+
+\color{red}{$\left[(T_{2A} - T_{2B}) - (C_{2A} -
+    C_{2B})\right]$} $-$ \color{blue}{$\left[(T_{1A} - T_{1B}) - (C_{1A} - C_{1B})\right]$}
+
+
+## Extension 5: Multiple Time Periods, Staggered Designs
+
+>- @calsan21 on multiple time periods
+>- @goodman21 on staggered treatment assignment
+>- Package `did`
+
+
+## The Stepped Wedge Design
+
+## Calloway-Sant'anna Approach: Multiple Time Periods
+
+\large
+
+With _many_ time periods, challenging to defining **the** estimand (like ATT).
+
+\pause 
+
+The @calsan21 approach:
+
+>- ID disaggregated parameters of interest
+>- Decide how to aggregate them
+>- Estimate them
+
+## Calloway-Sant'anna Approach: Multiple Time Periods
+
+\large
+Central disaggregated component:
+
+the _group-time average treatment effect_.
+
+\pause 
+
+>- "Group": treatment cohort. \pause Set of units first-treated at the same time moment \pause 
+>- $ATT(g,t)$
+
+
+
+## Calloway-Sant'anna Approach: Multiple Time Periods
+
+\large
+
+Then, how to aggregate?
+
+\pause 
+
+Many ways!
+
+## Calloway-Sant'Anna Approach: Multiple Time Periods
+
+\large
+
+Key assumptions:
+
+1. No treated at $t=1$. If treated at $t^*$, then treated at $t^* + 1$. Once treated, stay "treated". \pause 
+
+2. Random selection of units from big population \pause 
+
+3. Limited, known amt of anticipation \pause 
+
+4. Parallel trends with a never-treated group (conditional on covariates) \pause 
+
+5. Parallel trends with not-yet-treated (conditional on covariates) \pause 
+
+6. Overlap: $\epsilon < \text{Pr}(\text{Tr}) < 1 - \epsilon$ for each $t > 2$, $g$
+
+\pause 
+
+3/4/5 define valid comparison group, thus analysis sample.
+
+
+## Linear Models and Two-Way Fixed-Effects 
+
+@calsan23
+
+![](figs/03-cs-twfe-dgp.png)
+
+## Linear Models and Two-Way Fixed-Effects Event Study
+
+Model
+
+$Y_{i,t} = \alpha_i + \beta_t + \gamma (Pre) + \delta_j(Lag_j) + \zeta_k (Lead_k) + \epsilon_{i,t}$
+
+- Indicators for units
+- Indicators for time periods
+- Indicators for lags ("tr how long ago?")
+- Indicators for leads ("tr how far into future?")
+- (Cluster SE's on "states" of assignment)
+
+## Linear Models and Two-Way Fixed-Effects Event Study
+
+Model
+
+$Y_{i,t} = \alpha_i + \beta_t + \gamma (Pre) + \delta_j(Lag_j) + \zeta_k (Lead_k) + \epsilon_{i,t}$
+
+* $\delta_j$ often interpreted as "ATE of $j$ periods of treatment"
+* $\zeta_j$ often interpreted as "pre-tr trends"
+
+## Linear Models and Two-Way Fixed-Effects Event Study
+
+![](figs/03-cs-twfe-est.png)
+
+\pause 
+Severe bias for "effect of 3 years of Tr", e.g.!
+
+## Linear Models and Two-Way Fixed-Effects Event Study
+
+\large
+
+Instead, using C-S approach correctly ID's identical lead/pre-tr trends and cumulative effects of Tr!
+
+
+
+![](figs/03-cs-twfe-csest.png)
 
 <!-- Include a PDF/PNG/... -->
 <!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
@@ -57,9 +581,10 @@ Thanks!
 
 \large
 
-\center
-`rtm@american.edu`  
-`www.ryantmoore.org`  
+\begin{center}
+\texttt{rtm@american.edu} \\
+\texttt{www.ryantmoore.org}
+\end{center}
 
 ## References {.allowframebreaks}
 

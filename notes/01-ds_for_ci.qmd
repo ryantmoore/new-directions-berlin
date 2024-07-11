@@ -11,6 +11,7 @@ format:
     fonttheme: serif
     include-in-header:
       - text: | 
+          \usepackage{amsmath}
           \usepackage{wasysym}
           \newcommand{\independent}{\perp\mkern-9.5mu\perp}
     section-titles: true
@@ -1043,9 +1044,235 @@ ggplot(df_cf, aes(x = age, y = cf_te)) +
 
 # Variable Selection
 
-## Slide Title
+## Feature Selection
 
-Material.
+>- Wrappers: pick subset of covars, train on data (estimate model), test on hold-out, score predictions.  Keep best-scoring subset.
+>- Filters: correlate covars with outcome.  Keep strongest.
+>- Embeds: select features and estimate model at same time.  Penalize using more predictors.
+
+## Regularization Methods
+
+\large
+
+OLS reminder
+
+Minimize SSR: 
+
+\begin{eqnarray*}
+&& \text{argmin}_\beta \sum\limits_{i=1}^n \left(y_i - \hat{y}_i \right)^2 \\
+&& \text{argmin}_\beta \sum\limits_{i=1}^n \left(\mathbf{y} - \mathbf{X}\hat{\beta} \right)^2
+\end{eqnarray*}
+
+## Embedded Regularization Methods
+
+\large
+
+L1 regularization: the LASSO (Least Absolute Shrinkage and Selection Operator)
+
+\begin{eqnarray*}
+&& \text{argmin}_\beta \left[ \sum\limits_{i=1}^n \left(y_i - \mathbf{X}\hat{\beta} \right)^2 + \lambda \sum\limits_{j = 1}^k |\hat{\beta}_j| \right]
+\end{eqnarray*}
+
+\pause 
+
+L2 regularization: Ridge regression
+
+\begin{eqnarray*}
+\text{argmin}_\beta \left[ \sum\limits_{i=1}^n \left(y_i - \mathbf{X}\hat{\beta} \right)^2 + 
+\lambda \sum\limits_{j = 1}^k \hat{\beta}_j^2 \right]
+\end{eqnarray*}
+
+## Embedded Regularization Methods
+
+\large
+
+Mix L1 and L2: Elastic net
+
+\begin{eqnarray*}
+\text{argmin}_\beta \left( \frac{\sum\limits_{i=1}^n \left(y_i - \mathbf{X}\hat{\beta} \right)^2}{2n} + 
+\lambda \left[  \alpha \sum\limits_{j = 1}^k |\hat{\beta}_j| +
+\frac{1-\alpha}{2} \sum\limits_{j = 1}^k \hat{\beta}_j^2  \right] \right)
+\end{eqnarray*}
+
+
+\pause 
+Regularized trees, \ldots
+
+## Embedded Regularization Methods
+
+\large
+
+How to choose $\lambda$, $\alpha$?
+
+\pause 
+
+## The LASSO
+
+```{r}
+#| echo: false
+#| eval: false
+
+predictors <- c("age", "is_labour", "is_london", "is_winner")
+
+X <- mps[, predictors]
+```
+
+## The LASSO
+
+Cross-validation for $\lambda$:
+
+```{r}
+#| label: cvlasso
+
+df_lasso <- read_csv("~/Desktop/lasso.csv")
+
+X <- as.matrix(df_lasso[, 2:ncol(df_lasso)])
+
+Y <- as.matrix(df_lasso[, "y"])
+
+library(glmnet)
+
+cv_lasso <- cv.glmnet(X, Y, alpha = 1)
+```
+
+## The LASSO
+
+```{r}
+#| fig-height: 5
+plot(cv_lasso)
+cv_lasso$lambda.min
+```
+
+## The LASSO
+
+Implement:
+
+```{r}
+lasso_out <- glmnet(X, Y, alpha = 1, 
+                    lambda = cv_lasso$lambda.min)
+
+lasso_out
+```
+
+## The LASSO
+
+Coefficients:
+
+```{r}
+coef_lasso <- coef(lasso_out)
+round(coef_lasso, 3)
+```
+
+## The LASSO
+
+Coefficients:
+
+```{r}
+round(coef_lasso[, ], 3)
+```
+
+
+## The LASSO
+
+Implement, alternative $\lambda$:
+
+```{r}
+lasso_1se <- glmnet(X, Y, alpha = 1, 
+                    lambda = cv_lasso$lambda.1se)
+
+coef(lasso_1se)
+```
+
+## The LASSO
+
+Coefficients:
+
+```{r}
+round(coef(lasso_1se)[, ], 3)
+```
+
+## The Double LASSO for Treatment Effects
+
+\large
+
+The idea: 
+
+- covariates may $\rightsquigarrow Y$ or $\rightsquigarrow T$ \pause 
+- $\approx$ "double robust", "AIPW" estimators \pause 
+- (different to just "doing LASSO twice" for regularization $+$ shrinkage)
+
+## The Double LASSO for Treatment Effects
+
+\large
+
+1. Model $Y = f(X)$ using LASSO \pause 
+2. Model $T = f(X)$, using LASSO \pause 
+3. Let $X_{\text{LASSO}}$ be set of imp covariates identified s.t. each $\beta_{X_{\text{LASSO}}} > 0$ \pause 
+4. Model $Y = T + X_{\text{LASSO}}$ \pause 
+
+
+
+## The Double LASSO for Treatment Effects
+
+```{r}
+library(hdm)
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+df_mps <- MPs |> mutate(age = yod - yob,
+                        winner = as.numeric(margin > 0))
+
+rlasso_out <- rlassoATE(ln.net ~ age + party + margin.pre + region + winner | age + party + margin.pre + region, data = df_mps)
+```
+
+```{r}
+#| eval: true
+data(social)
+
+df_social <- social |> mutate(is_male = if_else(sex == "male", 1, 0),
+                              age = 2006 - yearofbirth,
+                              is_neighbors = if_else(messages == "Neighbors", 1, 0)) |>
+  filter(messages %in% c("Neighbors", "Control"))
+
+rlasso_out <- rlassoATE(primary2006 ~ age + is_male + primary2004 + hhsize + is_neighbors | age + is_male + primary2004 + hhsize, data = df_social)
+```
+
+## The Double LASSO for Treatment Effects
+
+```{r}
+summary(rlasso_out)
+```
+
+## The Double LASSO for Treatment Effects
+
+```{r}
+X <- as.matrix(df_social[, c("age", "is_male", "primary2004", "hhsize", "is_neighbors")])
+
+Y <- as.matrix(df_social[, "primary2006"])
+
+D <- as.matrix(df_social[, "is_neighbors"])
+
+summary(rlassoEffects(X, Y, method = "double selection"))
+
+```
+
+
+
+## R packages for Regularization, etc.
+
+\Large
+
+- `glmnet`
+- `caret`
+
+See also `tidymodels`, `parsnip`, \ldots
+
+## Embedded Regularization Methods
+
+
 
 <!-- Include a PDF/PNG/... -->
 <!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
