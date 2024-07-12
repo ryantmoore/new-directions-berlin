@@ -95,10 +95,10 @@ The "potential outcomes" framework:
 \begin{tabular}{ccccc}
  & & Would Enroll if & Would Enroll if  & \\
 Citizen & Canvass? & Canvass? & No Canvass? & Enroll \\ \hline
-1 & Yes & \only<2->{Yes} & \only<6->{\alert{(Yes)}} &  Yes \\
-2 & Yes & \only<3->{Yes} & \only<6->{\alert{(No)}} &  Yes \\
-3 & No & \only<6->{\alert{(Yes)}} & \only<4->{No} &  No \\
-4 & No &\only<6->{\alert{(No)}} & \only<5->{No} &  No
+1 & Yes & \only<3->{Yes} & \only<7->{\alert{(Yes)}} &  Yes \\
+2 & Yes & \only<4->{Yes} & \only<7->{\alert{(No)}} &  Yes \\
+3 & No & \only<7->{\alert{(Yes)}} & \only<5->{No} &  No \\
+4 & No &\only<7->{\alert{(No)}} & \only<6->{No} &  No
 \end{tabular}
 \end{center}
 
@@ -125,13 +125,13 @@ Unit $i$ & Treatment $T$ & $Y(1)$ & $Y(0)$ & $Y^{\text{obs}}$ & $Y(1) - Y(0)$ \\
 
 The "potential outcomes" framework, notation:
 
-- Units indexed by $i$
-- Treatment $T_i$ or $D_i$ or $Z_i$
-- Outcome if treated $Y_i(1)$
-- Outcome if control $Y_i(0)$
-- True treatment effect $\tau_i = Y_i(1) - Y_i(0)$
-- True average treatment effect $\bar{\tau} = \frac{1}{n} \sum_{i=1}^n \left(Y_i(1) - Y_i(0)\right)$
-- Pre-treatment covariates $\mathbf X$
+>- Units indexed by $i$
+>- Treatment $T_i$ or $D_i$ or $Z_i$
+>- Outcome if treated $Y_i(1)$
+>- Outcome if control $Y_i(0)$
+>- True treatment effect $\tau_i = Y_i(1) - Y_i(0)$
+>- True average treatment effect $\bar{\tau} = \frac{1}{n} \sum_{i=1}^n \left(Y_i(1) - Y_i(0)\right)$
+>- Pre-treatment covariates $\mathbf X$
 
 \pause 
 (and we'll draw some DAG's, too)
@@ -201,7 +201,11 @@ Causal Inference
 ![Don't do this.](figs/01-ml-ols-tweet.png)
 \pause 
 
-(OK, not "machine learning", perhaps, but _models_ at least \ldots)
+Don't do this.
+
+\pause 
+
+(Not "machine learning", probably, but _models_ at least \ldots)
 
 ## Causal Inference with Models
 
@@ -262,7 +266,7 @@ tidy_df12
 \pause 
 
 >- Both cases: effect of exposure $\approx 1$. 
->- Is this good?
+>- Is this good? Is it correct?  
 >- What if we adjust for covariate?
 
 ## Causal Inference with Models
@@ -284,7 +288,7 @@ tidy_df12_adj
 ```
 
 >- Both cases: effect of exposure $\approx 0.5$. 
->- Is this good?
+>- Is this good? Is it correct?  
 >- Which is correct? $\beta = 1$? $\beta = 0.5$?
 >- _Should_ we adjust for covariate?
 
@@ -295,11 +299,12 @@ There is nothing in the data that tells us. \pause \frownie
 
 \pause 
 
-Here are the true structures:
+Here are the true structures: First
 
 ```{r quartetdags}
 #| echo: false
-#| layout-ncol: 3
+#| fig-height: 6
+#| layout-ncol: 1
 coords <- list(x = c(T = 0, X = 1, Y = 2), 
                y = c(T = 1, X = 0, Y = 1.1))
 dag_conf <- dagify(Y ~ T, T ~ X, Y ~ X, coords = coords) 
@@ -313,22 +318,48 @@ ggdag_coll <- dag_coll |>
   ggdag_classic(size = 30) + theme_dag_blank()
 
 ggdag_conf
-ggplot(NULL) + theme(panel.background = element_blank())
-ggdag_coll
+#ggplot(NULL) + theme(panel.background = element_blank())
+#ggdag_coll
 ```
 
 ## Causal Inference with Models
 
-When know structures, adjustment sets for unbiasedness differ:
+\Large
+There is nothing in the data that tells us. \frownie
 
-- `df1`: confounding $\Rightarrow$ **adjust for $X$**
-- `df2`: collider $\Rightarrow$ **do not adjust for $X$**
+Here are the true structures: Second
+
+```{r}
+#| echo: false
+#| fig-height: 6
+#| layout-ncol: 1
+ggdag_coll
+```
+
+
+## Causal Inference with Models
+
+When know structures, adjustment sets for unbiasedness differ: \pause 
+
+>- `df1`: confounding $\Rightarrow$ **adjust for $X$**
+>- `df2`: collider $\Rightarrow$ **do not adjust for $X$**
+
+\pause 
 
 ```{r}
 g_conf <- dagitty("dag{ x -> y ; x <- c -> y }")
 g_coll <- dagitty("dag{ x -> y ; x -> c <- y }")
+```
 
+\pause 
+
+```{r}
 adjustmentSets(g_conf, "x", "y")
+```
+
+\pause 
+
+```{r}
 adjustmentSets(g_coll, "x", "y")
 ```
 
@@ -356,10 +387,10 @@ dag_coll |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
 \large
 
 >- Importance of identifying "pre-treatment covariates", "proper covariates"; doing "design before analysis"
->- Importance of experiments: strong knowledge about (part of) causal structure
+>- Importance of experiments: strong knowledge about (part of) causal structure -- assgn mechanism
 >- Causal inference is critical to scientific questions, and separate from prediction
 >- Though, methods from prediction can aid causal inference
->- (A perspective on "causal euphimisms": @hernan18)
+>- "Causal euphimisms" don't help [@hernan18]
 
 
 ## Approaches of Prediction and Causal Inference
@@ -368,12 +399,12 @@ dag_coll |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
 
 _Two Cultures_, [@breiman01-two]
 
-- _Data Models_: our "social science modeling"
-- _Algorithmic Models_: our "data science algorithms"
+>- _Data Models_: our "social science modeling"
+>- _Algorithmic Models_: our "data science algorithms"
 
 ## Methods for Prediction and Causal Inference
 
-\large
+\Large
 
 - Cross-validation
 - Regression/Decision trees
@@ -385,17 +416,19 @@ _Two Cultures_, [@breiman01-two]
 
 \large
 
-$k$-fold cross-validation
+$k$-fold cross-validation to select method
 
-- Randomly partition data into $k$ groups
-- Apply method to $k-1$ groups
-- Use result to predict for left-out group
-- Calculate $\text{MSE}_i = \frac{1}{n} \sum\limits_{i=1}^n \left(y_i - \hat{y}_i \right)^2$ 
-- Calculate test error as average of the $k$ MSE's:
+\pause 
+
+>- Randomly partition data into $k$ groups
+>- Apply method to $k-1$ groups
+>- Use result to predict for left-out group
+>- Calculate $\text{MSE}_i = \frac{1}{n} \sum\limits_{i=1}^n \left(y_i - \hat{y}_i \right)^2$ 
+>- Calculate test error as average of the $k$ MSE's: \pause 
 
 $$CV_{(k)} = \frac{1}{k} \sum\limits_{i=1}^k \text{MSE}_i$$
 
-- Select model that minimises $CV_{(k)}$
+>- Select model that minimises $CV_{(k)}$
 
 
 ## CV for Linear Model
@@ -522,10 +555,10 @@ ggplot(mses, aes(difference)) +
 
 \large
 
-- Partition predictor space into regions $R_1, R_2, \ldots, R_J$.
-- If unit falls in region $R_j$, use average outcome in $R_j$ as predicted value: $\hat{y}_{R_j}$
-- (For _decision_ on discrete outcome, count votes in $R_j$)
-- Goal: minimise residual sum of squares (RSS), just like LS regression:
+>- Partition predictor space into regions $R_1, R_2, \ldots, R_J$.
+>- If unit falls in region $R_j$, use average outcome in $R_j$ as predicted value: $\hat{y}_{R_j}$
+>- (For _decision_ on discrete outcome, count votes in $R_j$)
+>- Goal: minimise residual sum of squares (RSS), just like LS regression: \pause 
 
 $$\sum\limits_{j=1}^J \sum\limits_{i \in R_j} \left(y_i - \hat{y}_{R_j}\right)$$
 
@@ -538,8 +571,8 @@ How to define regions $R_j$?
 
 \pause 
 
-- Top-down, greedy recursive binary split
-- At each step, find predictor and cut-point that minimise
+>- Top-down, greedy recursive binary split
+>- At each step, find predictor and cut-point that minimise \pause 
 
 $$\sum\limits_{i: x\in R_1(j,s)} \left(y_i - \hat{y}_{R_1(j,s)}\right)^2 +
 \sum\limits_{i:x \in R_2(j,s)}  \left(y_i - \hat{y}_{R_2(j,s)}\right)^2$$
@@ -606,15 +639,15 @@ mp_split <- initial_split(mps, prop = 0.7)
 
 mp_train <- training(mp_split)
 mp_test <- testing(mp_split)
-
-tree_mp <- tree(ln.net ~ ., data = mp_train)
 ```
+
 
 ## Example: Regression Tree
 
 ```{r}
 #| fig-cap: "The regression tree (for training data)"
-
+#| fig-height: 5
+tree_mp <- tree(ln.net ~ ., data = mp_train)
 plot(tree_mp)
 text(tree_mp)
 ```
@@ -623,6 +656,8 @@ text(tree_mp)
 
 \large
 Would pruning help?
+
+\pause 
 
 ```{r}
 #| fig-cap: "Subtree size 2 minimises SSR"
@@ -858,9 +893,9 @@ lm_lin(ln.net ~ is_winner, covariates = ~ is_labour + is_london + age, data = mp
 
 
 
-## Homogeneous and Heterogeneous Effects: Detection
+<!-- ## Homogeneous and Heterogeneous Effects: Detection -->
 
-Heterogeneous effects:
+<!-- Heterogeneous effects: -->
 
 ## CATEs: Conditional ATEs
 
@@ -1269,9 +1304,6 @@ summary(rlassoEffects(X, Y, method = "double selection"))
 - `caret`
 
 See also `tidymodels`, `parsnip`, \ldots
-
-## Embedded Regularization Methods
-
 
 
 <!-- Include a PDF/PNG/... -->
