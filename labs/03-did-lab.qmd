@@ -1,0 +1,159 @@
+---
+title: "Difference-in-Differences Lab"
+author: 
+  - Ryan T. Moore^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
+format: 
+  pdf:
+    number-sections: true
+    toc: false
+    geometry: 
+      - top=3cm
+date: 2024-07-17
+date-format: iso
+documentclass: article
+editor: source
+bibliography: ../admin/main.bib
+---
+
+```{r setup}
+#| echo: false
+#| eval: false
+#| message: false
+
+library(did)
+library(tidyverse)
+```
+
+# Modern Difference-in-Difference with Covariates {#sec-covs}
+
+@calsan21pkg estimate the effects of US state-level minimum wage laws on employment of teenagers. Replication data are available in the `did` package via `data(mpdta)`. Further information on the data is available in @calsan21.
+
+Using teenage employment (`lemp`) as the outcome, estimate the average $ATT(g,t)$, using regression adjustment to account for county size in the outcome model. Compare this result to the unadjusted one, and interpret.
+
+```{r}
+#| echo: false
+#| eval: false
+
+cs_adj_out <- att_gt(yname = "lemp",
+                 gname = "first.treat",
+                 idname = "countyreal",
+                 tname = "year",
+                 xformla = ~ lpop,
+                 data = mpdta,
+                 est_method = "reg"
+)
+
+aggte(cs_adj_out, type = "simple")
+
+# Appears substantively unchanged.
+```
+
+
+# Doubly-Robust Modern Difference-in-Difference {#sec-dr}
+
+Again using teenage employment (`lemp`) as the outcome, estimate the average $ATT(g,t)$. This time, include county population as a predictor in both the outcome regression and a model for the treatment assignment. Compare this result to the others, and interpret.
+
+```{r}
+#| echo: false
+#| eval: false
+
+cs_dr_out <- att_gt(yname = "lemp",
+                 gname = "first.treat",
+                 idname = "countyreal",
+                 tname = "year",
+                 xformla = ~ lpop,
+                 data = mpdta,
+                 est_method = "dr"
+)
+
+aggte(cs_dr_out, type = "simple")
+
+# Appears substantively unchanged.
+```
+
+# Modern Difference-in-Difference Placebo Testing {#sec-placebo}
+
+Perform a placebo test to validate our causal interpretation of the individual $ATT(g,t)$'s. Using `lpop` as the outcome, estimate all of the $ATT(g,t)$ values, compare them to those we found during the discussion, and interpret. Do the same with the average $ATT(g,t)$. Do not use covariates in a model. (Note that you will need to jitter the `lpop` "outcome" somewhat, since, as a pre-treatment measure, it does not vary by county-year in the data.)
+
+```{r}
+#| echo: false
+#| eval: false 
+
+mpdta_j <- mpdta |> mutate(lpop_j = jitter(lpop, factor = 4))
+  
+cs_plac_out <- att_gt(yname = "lpop_j",
+                 gname = "first.treat",
+                 idname = "countyreal",
+                 tname = "year",
+                 xformla = ~ 1,
+                 data = mpdta_j,
+                 est_method = "reg"
+)
+
+aggte(cs_plac_out, type = "simple")
+
+# All zeros
+```
+
+```{r}
+#| echo: false
+#| eval: false
+#| fig-height: 5
+
+ggdid(cs_plac_out)
+```
+
+
+# Modern Difference-in-Difference Policy Implication {#sec-policy}
+
+A policymaker wants to be able to make a statement of the form, "since the first state raised its minimum wage in 2004, $Z$ teenagers have lost their jobs (or not been hired) due to these policy changes."
+
+Use the calculation you completed in @sec-covs to provide an estimate for $Z$. You may make simplifying assumptions like "no population growth".
+
+```{r}
+#| echo: false
+#| eval: false
+
+# Avg employment by group at baseline:
+df_atts <- mpdta |> 
+  filter(year == 2003) |> 
+  group_by(first.treat) |>
+  summarise(lemp_base = mean(lemp))
+
+# All ATT(g, t)'s:
+df_eff <- tibble(first.treat = cs_adj_out$group,
+                 t = cs_adj_out$t,
+                 att = cs_adj_out$att)
+
+# Sum of ATT(g, t)'s:
+df_eff_summ <- df_eff |>
+  group_by(first.treat) |>
+  summarise(sum_atts = sum(att))
+
+df_atts <- df_atts |> 
+  left_join(df_eff_summ) |>
+  mutate(lemp_final = lemp_base + sum_atts,
+         emp_baseline = 10^lemp_base,
+         emp_final = 10^lemp_final,
+         emp_diff = emp_baseline - emp_final)
+
+df_atts
+
+# Total:
+sum(df_atts$emp_diff, na.rm = TRUE)
+```
+
+
+<!-- @fig-cars. -->
+
+<!-- ```{r fig-cars} -->
+<!-- #| echo: false -->
+<!-- #| fig-cap: Distance on Speed -->
+
+<!-- ggplot(cars, aes(speed, dist)) + -->
+<!--   geom_point() -->
+<!-- ``` -->
+
+
+
+# References {.unnumbered}
