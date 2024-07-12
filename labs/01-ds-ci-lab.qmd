@@ -1,0 +1,43 @@
+---
+title: "Data Science for Causal Inference Lab"
+author: 
+  - Ryan T. Moore^[Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. +1 202.885.6470 (tel); `rtm` (at) `american` (dot) `edu`; http://ryantmoore.org.]
+format: 
+  pdf:
+    number-sections: true
+    toc: false
+    geometry: 
+      - top=3cm
+date: 2024-07-15
+date-format: iso
+documentclass: article
+editor: source
+bibliography: ../admin/main.bib
+---
+
+```{r setup}
+#| echo: false
+#| message: false
+
+library(tidyverse)
+```
+
+# Causal Forests {#sec-cf}
+
+# Variable Selection {#sec-vars}
+
+<!-- @fig-cars. -->
+
+<!-- ```{r fig-cars} -->
+<!-- #| echo: false -->
+<!-- #| fig-cap: Distance on Speed -->
+
+<!-- ggplot(cars, aes(speed, dist)) + -->
+<!--   geom_point() -->
+<!-- ``` -->
+
+# Section {#sec-yours}
+
+
+
+# References {.unnumbered}
