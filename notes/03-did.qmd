@@ -491,7 +491,7 @@ the _group-time average treatment effect_.
 
 Then, how to aggregate? \pause Many ways! \pause 
 
->- Exposure  
+>- Exposure/Dosage
 ("effect for those w/ 2 years treatment")
 >- Group  
 ("effect for those first treated in 2020")
@@ -515,9 +515,11 @@ Key assumptions:
 
 3. Limited, known amt of anticipation \pause 
 
-4. Parallel trends with a never-treated group (conditional on covariates) \pause 
+4. Parallel trends with a never-treated group  
+(conditional on covariates) \pause 
 
-5. Parallel trends with not-yet-treated (conditional on covariates) \pause 
+5. Parallel trends with not-yet-treated  
+(conditional on covariates) \pause 
 
 6. Overlap: $\epsilon < \text{Pr}(\text{Tr}) < 1 - \epsilon$ for each $t > 2$, $g$
 
@@ -546,7 +548,7 @@ Effect of US state min wages on _teen_ employment.
 >    - 20 first treated in 2004
 >    - 40 first treated in 2006
 >    - 131 first treated in 2007
->- (Panel data structure: (5 yrs) $\times$ (500 cntys) = (2500 cnty-yrs))
+>- Panel data structure: (5 yrs) $\times$ (500 cntys) = (2500 cnty-yrs)
 
 \pause 
 
@@ -598,14 +600,49 @@ ggdid(cs_out)
 <!-- ``` -->
 
 
-## C-S Example
+## C-S Example: Aggregate by $g, t$
+
+\large
+
+Instead of fully-disaggregated $ATT(g,t)$'s, summarise into various effects.
+
+\pause 
+
+First, avg $ATT(g,t)$'s (weight by group size):
+
+```{r}
+aggte(cs_out, type = "simple")
+```
+
+## C-S Example: Aggregate by group $g$
+
+\large
+Second, get ATE for each group, avg across groups.
+
+\pause 
+
+```{r}
+group_effects <- aggte(cs_out, type = "group")
+```
+
+\pause 
+
+![](figs/03-cs-es-summary_groups.png)
+
+## C-S Example: Aggregate by Dosage
+
+\large
+
+Third, by amt of treatment/exposure length/dosage ("event study"):
+
+\pause 
 
 ```{r}
 #| label: csaggte
 cs_es_out <- aggte(cs_out, type = "dynamic")
 ```
 
-## C-S Example
+## C-S Example: Aggregate by Dosage
 
 ```{r}
 #| label: csaggteplot
@@ -613,7 +650,7 @@ cs_es_out <- aggte(cs_out, type = "dynamic")
 ggdid(cs_es_out)
 ```
 
-## C-S Example
+## C-S Example: Aggregate by Dosage
 
 \large 
 
@@ -629,28 +666,87 @@ summary(cs_es_out)
 \pause 
 "Overall" effect of participating: get avg effect at each exposure length, avg those across different exposure lengths.
 
-## C-S Example
+## C-S Example: Aggregate by Time $t$
 
-\large 
-Alternative: get ATE for each group, avg across groups.
+\large
 
-\pause 
+Fourth, get avg effect for each time period, avg across periods.
+
 
 ```{r}
-group_effects <- aggte(cs_out, type = "group")
+cs_cal_out <- aggte(cs_out, type = "calendar")
 ```
 
-\pause 
+![](figs/03-cs-cal-summary.png)
 
-![](figs/03-cs-es-summary_groups.png)
+## C-S Example: Aggregate by Time $t$
 
+```{r}
+ggdid(cs_cal_out)
+```
 
 
 ## Linear Models and Two-Way Fixed-Effects 
 
-@calsan23
+\pause 
+
+\large
+
+Consider 
+
+$$Y_{i,t} = \alpha_i + \gamma_t + \beta \cdot T_{i,t} + \epsilon_{i,t}$$
 
 \pause 
+
+>- $\beta$: DiD estimate (if 2 units, 2 periods!)
+>- More generally, $\beta$ is weighted avg of _all possible_ $2\times 2$ DiD estimators comparing C-S "groups"
+>- (Among these, some use "never treated", others use "not yet treated")
+
+## Linear Models and Two-Way Fixed-Effects 
+
+\large
+
+>- Weights: prop to 
+>    - group size 
+>    - var in treatment indicator 
+<!-- (w/in pair) -->
+
+\pause 
+
+$$\text{var}(p) = \sqrt{\frac{p(1-p)}{n}}$$ 
+\pause 
+
+>- highest at $p = 0.5$
+>- $\rightsquigarrow$ (treated at midpoint) gets most weight
+>- Also, can be _negative_ if ATE's vary over time!
+
+\pause 
+
+@goodman21
+
+\pause 
+
+So, use C-S aggregation!
+
+
+## Linear Models and Two-Way Fixed-Effects 
+
+\Large
+
+What if effect constant over time?
+\pause 
+
+(Still, use C-S aggregation!)
+
+\pause 
+
+@calsan23
+
+
+## Linear Models and Two-Way Fixed-Effects 
+
+\large
+
 
 ![](figs/03-cs-twfe-dgp.png)
 
@@ -698,7 +794,8 @@ Instead, using C-S approach correctly ID's identical lead/pre-tr trends and cumu
 
 >- If you include a never-treated group, TWFE-ES can recover truth \pause (but so does Calloway-Sant'Anna) \pause 
 >- But, if there are heterogeneous treatment effects, TWFE-ES won't recover truth (even with never-treated group)
->- Calloway-Sant'Anna does!
+>- Calloway-Sant'Anna does
+>- (So, use C-S aggregation!)
 
 
 
