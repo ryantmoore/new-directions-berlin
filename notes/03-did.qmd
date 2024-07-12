@@ -489,11 +489,19 @@ the _group-time average treatment effect_.
 
 \large
 
-Then, how to aggregate?
+Then, how to aggregate? \pause Many ways! \pause 
 
-\pause 
+>- Exposure  
+("effect for those w/ 2 years treatment")
+>- Group  
+("effect for those first treated in 2020")
+>- Cumulative  
+("total effect up to 2020")
+>- Overall  
+("total effect up to 2024")
+>- Overall, group as unit  
+("total effect up to 2024: get state avgs, avg those")
 
-Many ways!
 
 ## Calloway-Sant'Anna Approach: Multiple Time Periods
 
@@ -517,10 +525,132 @@ Key assumptions:
 
 3/4/5 define valid comparison group, thus analysis sample.
 
+## C-S Example
+
+```{r}
+#| label: didpkg
+#| echo: false
+library(did)
+data(mpdta)
+```
+
+\large 
+
+Effect of US state min wages on _teen_ employment.
+
+\pause 
+
+>- Annual data, 2003-2007
+>- `r length(unique(mpdta$countyreal))` counties
+>    - 309 never-treated
+>    - 20 first treated in 2004
+>    - 40 first treated in 2006
+>    - 131 first treated in 2007
+>- (Panel data structure: (5 yrs) $\times$ (500 cntys) = (2500 cnty-yrs))
+
+\pause 
+
+@calsan21pkg: `did`
+
+
+
+## C-S Example
+
+Calculate all the $ATT(g,t)$ effects, for each (state $\times$ year)
+
+\pause 
+
+```{r}
+cs_out <- att_gt(yname = "lemp",
+                 gname = "first.treat",
+                 idname = "countyreal",
+                 tname = "year",
+                 xformla = ~ 1,
+                 data = mpdta,
+                 est_method = "reg"
+)
+```
+
+\pause 
+
+>- `est_method`: regression, IPW, doubly-robust, etc.
+>- `xformla`: formula for covariate adjustment
+>- `control_group`: `"nevertreated"`, `"notyettreated"`
+
+## C-S Example
+
+```{r}
+#| eval: true
+ggdid(cs_out)
+```
+
+## C-S Example
+
+\large
+
+>- "Pre" C-S $ATT(g,t)$ values: _pre_-test of parallel trends assumption
+>- "Post" C-S $ATT(g,t)$ values: effects of min wage policy
+
+<!-- ## C-S Example -->
+
+<!-- ```{r} -->
+<!-- summary(cs_out) -->
+<!-- ``` -->
+
+
+## C-S Example
+
+```{r}
+#| label: csaggte
+cs_es_out <- aggte(cs_out, type = "dynamic")
+```
+
+## C-S Example
+
+```{r}
+#| label: csaggteplot
+#| eval: true
+ggdid(cs_es_out)
+```
+
+## C-S Example
+
+\large 
+
+```{r}
+#| eval: false
+summary(cs_es_out)
+```
+
+\pause 
+
+![](figs/03-cs-es-summary.png)
+
+\pause 
+"Overall" effect of participating: get avg effect at each exposure length, avg those across different exposure lengths.
+
+## C-S Example
+
+\large 
+Alternative: get ATE for each group, avg across groups.
+
+\pause 
+
+```{r}
+group_effects <- aggte(cs_out, type = "group")
+```
+
+\pause 
+
+![](figs/03-cs-es-summary_groups.png)
+
+
 
 ## Linear Models and Two-Way Fixed-Effects 
 
 @calsan23
+
+\pause 
 
 ![](figs/03-cs-twfe-dgp.png)
 
@@ -561,6 +691,16 @@ Instead, using C-S approach correctly ID's identical lead/pre-tr trends and cumu
 
 
 ![](figs/03-cs-twfe-csest.png)
+
+## Linear Models and Two-Way Fixed-Effects Event Study
+
+\large
+
+>- If you include a never-treated group, TWFE-ES can recover truth \pause (but so does Calloway-Sant'Anna) \pause 
+>- But, if there are heterogeneous treatment effects, TWFE-ES won't recover truth (even with never-treated group)
+>- Calloway-Sant'Anna does!
+
+
 
 <!-- Include a PDF/PNG/... -->
 <!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
