@@ -19,12 +19,156 @@ bibliography: ../admin/main.bib
 #| echo: false
 #| message: false
 
+#library(cspp)
+library(glmnet)
+library(grf)
+library(rsample)
 library(tidyverse)
 ```
 
 # Causal Forests {#sec-cf}
 
+Consider the social pressure experiment data from @gergrelar08. Read in the data, prepare it for processing with `glmnet` and `grf`, and take a sample of 50,000 of the registrants (some code provided below to help). We are interested in treatment effect heterogeneity surrounding the causal effect of the "neighbors" message on turnout in the 2006 presidential primary.
+
+Build an honest causal forest using the predictors `age`, `hhsize`, `isFemale`, and `primary2004`. Examine the treatment effect heterogeneity along the dimensions of the predictors.
+
+
+
+```{r}
+#| echo: true
+#| eval: false
+#| message: false
+
+set.seed(233559574)
+social <- read_csv("http://j.mp/2Et71U0")
+
+social <- social |> 
+  mutate(age = 2006 - yearofbirth, 
+         isFemale = (sex == "female"),
+         isFemale = as.numeric(isFemale),
+         sentNeighbors = (messages == "Neighbors"), 
+         sentNeighbors = as.numeric(sentNeighbors))
+
+social <- social |> sample_n(50000)
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+soc_split <- initial_split(social, 
+                          prop = 0.7)
+
+soc_train <- training(soc_split)
+soc_test <- testing(soc_split)
+
+X <- soc_train |> select(age, hhsize, isFemale, primary2004)
+
+W <- soc_train |> select(sentNeighbors) |> unlist()
+
+Y <- soc_train |> select(primary2006) |> unlist()
+
+cf_out <- causal_forest(X, Y, W)
+
+cf_out
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+X_test <- soc_test |> select(age, hhsize, isFemale, primary2004)
+
+cf_pred_est_var <- predict(cf_out, 
+                           X_test,
+                           estimate.variance = TRUE)
+
+cf_preds <- cf_pred_est_var$predictions
+
+df_cf <- tibble(X_test,
+                cf_te = cf_preds,
+                cf_se = sqrt(cf_pred_est_var$variance.estimates),
+                te_1se_lower = cf_te - cf_se,
+                te_1se_upper = cf_te + cf_se)
+```
+
+```{r}
+#| echo: false
+#| eval: false
+#| message: false
+ggplot(df_cf, aes(age, cf_te)) + geom_point() + geom_smooth(se = FALSE)
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+ggplot(df_cf, aes(as.factor(hhsize), cf_te)) + geom_violin(draw_quantiles = (1:3) / 4) 
+```
+
+
+```{r}
+#| echo: false
+#| eval: false
+
+ggplot(df_cf, aes(as.factor(isFemale), cf_te)) + geom_violin(draw_quantiles = (1:3) / 4)
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
+ggplot(df_cf, aes(as.factor(primary2004), cf_te)) + geom_violin(draw_quantiles = (1:3) / 4)
+```
+
+
 # Variable Selection {#sec-vars}
+
+<!-- Consider the social pressure experiment data from @gergrelar08. Read in the data, prepare it for processing with `glmnet`, and take a sample of 50,000 of the registrants (some code provided below to help).  -->
+
+Starting with the same data, do some naïve "feature engineering" by adding age$^2$, age$^3$, age$^4$, and age$^5$ to the matrix `X`. Use 10-fold cross-validation on the LASSO, and report the coefficients associated with (a) the $\lambda$ that minimises the mean cross-validated MSE, and (b) the $\lambda$ that gets within 1 SE of the mean cross-validated MSE. Describe any differences in which coefficients are retained, and their magnitudes. Finally, what experimental treatment effects do you estimate using these two different $\lambda$ values?
+
+
+
+```{r}
+#| echo: false
+#| eval: false
+#| message: false
+ 
+set.seed(233559574)
+social <- read_csv("http://j.mp/2Et71U0")
+
+social <- social |> 
+  mutate(age = 2006 - yearofbirth, 
+         isFemale = (sex == "female"),
+         isFemale = as.numeric(isFemale),
+         sentNeighbors = (messages == "Neighbors"), 
+         sentNeighbors = as.numeric(sentNeighbors))
+
+social <- social |> sample_n(50000)
+
+predictors <- c("isFemale", "primary2004", "sentNeighbors", "hhsize", "age") 
+X <- social[, predictors]
+```
+
+```{r}
+#| echo: false
+#| eval: false
+X <- X |> mutate(age2 = age^2, 
+                 age3 = age^3, 
+                 age4 = age^4,
+                 age5 = age^5) |> as.matrix()
+
+y <- social[, "primary2006"] |> unlist() |> as.numeric()
+
+cv_lasso_out <- cv.glmnet(X, y, alpha = 1)
+
+coef(cv_lasso_out, s = "lambda.min")
+coef(cv_lasso_out, s = "lambda.1se")
+```
+
+
+
 
 <!-- @fig-cars. -->
 
@@ -36,8 +180,8 @@ library(tidyverse)
 <!--   geom_point() -->
 <!-- ``` -->
 
-# Section {#sec-yours}
+# Variable Selection {#sec-yours}
 
-
+Consider a higher-dimensional observational dataset from your research. Use a double LASSO to select variables and estimate an ATE of interest.
 
 # References {.unnumbered}
