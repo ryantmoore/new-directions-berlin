@@ -68,7 +68,7 @@ experiments in public policy
 \large
 
 >- Data Science in Causal Inference
->    - Models
+>    - Models, tasks, methods
 >    - Heterogeneous treatment effects
 >    - Variable selection
 >- Sensitivity
@@ -81,6 +81,21 @@ experiments in public policy
 >    - Staggered adoption
 >    - Calloway-Sant'Anna approach
 
+## Plan 
+
+\large
+
+>- Introduction to several approaches
+>- A survey 
+>- Examples: 
+>    - low-dimensional
+>    - available data
+>    - (experimental)
+>    - estimation/interpretation practice
+>- Lab exercises last hour each day
+>- Timing should $\approx$ work out \ldots
+>- Materials here:  
+https://github.com/ryantmoore/new-directions-berlin
 
 
 # Data Science in Causal Inference
@@ -126,7 +141,7 @@ Unit $i$ & Treatment $T$ & $Y(1)$ & $Y(0)$ & $Y^{\text{obs}}$ & $Y(1) - Y(0)$ \\
 The "potential outcomes" framework, notation:
 
 >- Units indexed by $i$
->- Treatment $T_i$ or $D_i$ or $Z_i$
+>- Treatment $T_i$ or $D_i$ or $Z_i$ or $W_i$
 >- Outcome if treated $Y_i(1)$
 >- Outcome if control $Y_i(0)$
 >- True treatment effect $\tau_i = Y_i(1) - Y_i(0)$
@@ -141,6 +156,8 @@ The "potential outcomes" framework, notation:
 \Large 
 
 Three tasks of data science:
+
+\pause 
 
 >- Description
 >- Prediction
@@ -158,7 +175,7 @@ Models/algorithms central to all three.
 
 ## Data Science Approaches
 
-\large 
+\Large 
 
 Description
 
@@ -167,15 +184,17 @@ Description
 
 ## Data Science Approaches
 
-\large 
+\Large 
 
 Prediction
 
 >- Components
->    - Inputs/outputs (predictors/outcomes, features/responses, \ldots)
->    - Mapping from inputs to outputs (linear model, decision tree, \ldots)
+>    - Inputs/outputs  
+(predictors/outcomes, features/responses, \ldots)
+>    - Mapping from inputs to outputs  
+(linear model, decision tree, \ldots)
 >    - Metric for evaluating mapping
->- With these, model machine learning does the work
+>- With these, model/machine learning algorithm does the work
 >- E.g., regression, random forests, neural networks, \ldots
 
 ## Data Science Approaches
@@ -191,7 +210,7 @@ Causal Inference
 >    - Not all inputs treated same
 >    - $T$ v. $\mathbf X$ -- very different!
 >    - (the more knowledge, the better!)
->    - (alternative: solve fundamental problem of causal inference!)
+>    - (alternative: solve fundamental problem of causal inference! \smiley )
 >- E.g., experiments, observational causal designs, \ldots
 
 ## Causal Inference with Machine Learning
@@ -220,7 +239,9 @@ data("causal_collider")
 df2 <- causal_collider
 ```
 
-Loaded two datasets:
+Consider two loaded datasets:
+
+\pause 
 
 ```{r}
 str(df1)
@@ -231,7 +252,7 @@ str(df2)
 
 ```{r}
 #| echo: false
-#| layout-ncol: 2
+#| layout-ncol: 1
 
 p1 <- ggplot(df1, aes(exposure, outcome)) + 
   geom_point(aes(color = covariate)) + geom_smooth(method = "lm") +
@@ -241,6 +262,23 @@ p2 <- ggplot(df2, aes(exposure, outcome)) +
   geom_point(aes(color = covariate)) + geom_smooth(method = "lm") +
   labs(title = "Data set 2")
 
+p1
+```
+
+## Causal Inference with Models
+
+```{r}
+#| echo: false
+#| layout-ncol: 1
+p2
+```
+
+
+## Causal Inference with Models
+
+```{r}
+#| echo: false
+#| layout-ncol: 2
 p1
 p2
 ```
@@ -376,6 +414,28 @@ When know structures, adjustment sets for unbiasedness differ:
 
 dag_conf |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
 dag_coll |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
+```
+
+## Causal Inference with Models
+
+\large
+
+So, correct adjustments to reveal causal effect of $T \rightsquigarrow Y$:
+
+\pause 
+
+`df1`, adjust for $X$, $\beta = 0.5$:
+```{r}
+#| echo: false
+
+tidy_df1_adj |> filter(term == "exposure")
+```
+
+`df2`, do not adjust for $X$, $\beta = 1$:
+```{r}
+#| echo: false
+
+tidy_df2 |> filter(term == "exposure")
 ```
 
 \pause 
@@ -620,6 +680,9 @@ But, how to choose $\alpha$? (Use cross-validation.)
 
 ## Example: Regression Tree
 
+Effect of office-holding on wealth  
+[@egghai09]:
+
 ```{r}
 library(qss)
 library(rsample)
@@ -632,7 +695,14 @@ mps <- MPs |> mutate(age = yod - yob,
                      is_winner = if_else(margin > 0, 1, 0)) |>
   select(ln.net, age, is_labour, is_london, is_winner) |> 
   na.omit()
+```
 
+
+## Example: Regression Tree
+
+\large
+
+```{r}
 set.seed(765076184)
 
 mp_split <- initial_split(mps, prop = 0.7)
@@ -791,7 +861,7 @@ bag_mps <- randomForest(ln.net ~ ., data = mp_train,
 
 # Decorrelate:
 rf_mps <- randomForest(ln.net ~ ., data = mp_train,
-                        ntree = 500, mtry = 2, 
+                       ntree = 500, mtry = 2, 
                        importance = TRUE)
 ```
 
@@ -1004,6 +1074,18 @@ cf_out <- causal_forest(X, Y, W)
 
 ## Example: Causal Forests
 
+\large
+
+```{r}
+cf_out
+```
+
+\pause 
+
+("How frequently was $i$ the split feature?")
+
+## Example: Causal Forests
+
 \large 
 
 ```{r}
@@ -1011,7 +1093,11 @@ X_test <- mp_test |> select(age, is_labour, is_london)
 
 cf_pred_est_var <- predict(cf_out, X_test, 
                            estimate.variance = TRUE)
+```
 
+\pause 
+
+```{r}
 cf_preds <- cf_pred_est_var$predictions
 
 df_cf <- tibble(X_test, 
@@ -1020,6 +1106,27 @@ df_cf <- tibble(X_test,
                 te_1se_lower = cf_te - cf_se,
                 te_1se_upper = cf_te + cf_se)
 ```
+
+## Example: Causal Forests
+
+\Large
+
+Avg pred treatment effect in test sample:
+
+```{r}
+mean(cf_preds)
+```
+
+## Example: Causal Forests
+
+\Large
+
+A doubly-robust ATE:
+
+```{r}
+average_treatment_effect(cf_out)
+```
+
 
 ## Example: Causal Forests Results, Party
 
@@ -1040,6 +1147,20 @@ labour_mean_cf_te <- mean(df_cf$cf_te[df_cf$is_labour == 1])
 - Mean CF TE, Tory: `r round(tory_mean_cf_te, 3)` \pause $\rightsquigarrow \pounds `r formatC(round(exp(median(mps$ln.net) + tory_mean_cf_te) - exp(median(mps$ln.net)), -3), format = "f", digits = 0, big.mark = ",")`$ \pause 
 - Mean CF TE, Labour: `r round(labour_mean_cf_te, 3)` \pause $\rightsquigarrow \pounds `r formatC(round(exp(median(mps$ln.net) + labour_mean_cf_te) - exp(median(mps$ln.net)), -3), format = "f", digits = 0, big.mark = ",")`$ 
 
+## Example: Causal Forests Results, Party
+
+\large
+
+```{r}
+average_treatment_effect(
+  cf_out, 
+  subset = X$is_labour == 0)
+average_treatment_effect(
+  cf_out, 
+  subset = X$is_labour == 1)
+```
+
+
 
 ## Example: Causal Forests Results, London
 
@@ -1049,6 +1170,20 @@ labour_mean_cf_te <- mean(df_cf$cf_te[df_cf$is_labour == 1])
 ggplot(df_cf, aes(factor(is_london), cf_te)) + 
   geom_violin(draw_quantiles = (1:3) / 4) +
   labs(x = "Is London?", y = "Honest CF Estimated Treatment Effect")
+```
+
+## Example: Causal Forests Results, London
+
+
+\large
+
+```{r}
+average_treatment_effect(
+  cf_out, 
+  subset = X[, "is_london"] == 1)
+average_treatment_effect(
+  cf_out, 
+  subset = X[, "is_london"] == 0)
 ```
 
 ## Example: Causal Forests Results, Age
@@ -1062,16 +1197,17 @@ ggplot(df_cf, aes(x = age, y = cf_te)) +
   labs(x = "Age at Death", y = "Honest CF Estimated Treatment Effect")
 ```
 
-## Example: Causal Forests Results, Age
+<!-- ## Example: Causal Forests Results, Age -->
 
 ```{r}
 #| echo: false
+#| eval: false
 
 ggplot(df_cf, aes(x = age, y = cf_te)) + 
-  geom_point() + 
+  geom_point(aes(color = factor(is_labour))) + 
   geom_errorbar(aes(ymin = te_1se_lower, 
-                    ymax = te_1se_upper)) +
-  geom_smooth(se = FALSE) + 
+                    ymax = te_1se_upper,
+                    color = factor(is_labour))) + 
   labs(x = "Age at Death", y = "Honest CF Estimated Treatment Effect")
 ```
 
@@ -1159,7 +1295,7 @@ Cross-validation for $\lambda$:
 ```{r}
 #| label: cvlasso
 
-df_lasso <- read_csv("~/Desktop/lasso.csv")
+df_lasso <- read_csv("../data/01-lasso.csv")
 
 X <- as.matrix(df_lasso[, 2:ncol(df_lasso)])
 
@@ -1247,10 +1383,18 @@ The idea:
 
 
 
-## The Double LASSO for Treatment Effects
+## The Double LASSO for Treatment Effects: Example
+
+\pause 
+
+![](figs/02-gg-neighbors.png)
+
+## The Double LASSO for Treatment Effects: Example
 
 ```{r}
 library(hdm)
+library(qss)
+data(social)
 ```
 
 ```{r}
@@ -1265,17 +1409,27 @@ rlasso_out <- rlassoATE(ln.net ~ age + party + margin.pre + region + winner | ag
 
 ```{r}
 #| eval: true
-data(social)
 
-df_social <- social |> mutate(is_male = if_else(sex == "male", 1, 0),
-                              age = 2006 - yearofbirth,
-                              is_neighbors = if_else(messages == "Neighbors", 1, 0)) |>
+df_social <- social |> 
+  mutate(is_male = if_else(sex == "male", 1, 0),
+         age = 2006 - yearofbirth,
+         is_neighbors = if_else(messages == "Neighbors", 1, 0)) |>
   filter(messages %in% c("Neighbors", "Control"))
 
-rlasso_out <- rlassoATE(primary2006 ~ age + is_male + primary2004 + hhsize + is_neighbors | age + is_male + primary2004 + hhsize, data = df_social)
+df_social |> select(-yearofbirth) |> head()
 ```
 
-## The Double LASSO for Treatment Effects
+
+## The Double LASSO for Treatment Effects: Example
+
+```{r}
+rlasso_out <- rlassoATE(
+  primary2006 ~ age + is_male + primary2004 + hhsize + 
+    is_neighbors | age + is_male + primary2004 + hhsize, 
+  data = df_social)
+```
+
+## The Double LASSO for Treatment Effects: Example
 
 ```{r}
 summary(rlasso_out)
@@ -1284,7 +1438,8 @@ summary(rlasso_out)
 ## The Double LASSO for Treatment Effects
 
 ```{r}
-X <- as.matrix(df_social[, c("age", "is_male", "primary2004", "hhsize", "is_neighbors")])
+X <- as.matrix(df_social[, c("age", "is_male", "primary2004", 
+                             "hhsize", "is_neighbors")])
 
 Y <- as.matrix(df_social[, "primary2006"])
 

@@ -30,7 +30,7 @@ library(tidyverse)
 
 Consider the social pressure experiment data from @gergrelar08. Read in the data, prepare it for processing with `glmnet` and `grf`, and take a sample of 50,000 of the registrants (some code provided below to help). We are interested in treatment effect heterogeneity surrounding the causal effect of the "neighbors" message on turnout in the 2006 presidential primary.
 
-Build an honest causal forest using the predictors `age`, `hhsize`, `isFemale`, and `primary2004`. Examine the treatment effect heterogeneity along the dimensions of the predictors.
+Build a causal forest using the predictors `age`, `hhsize`, `isFemale`, and `primary2004`. Examine the treatment effect heterogeneity along the dimensions of the predictors.
 
 
 

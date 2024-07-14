@@ -60,7 +60,7 @@ Course content is the intellectual property of the instructor or student who cre
 
 Data science methods in causal inference
 
-* 13:00-14:00: Introductions. Building models. Social science and data science goals. K-nearest neighbors. Decision trees. Random forests. Cross-validation.
+* 13:00-14:00: Introductions. Building models. Social science and data science goals. Cross-validation. Regression/decision trees. Random forests.
 * 14:00-15:00: Homogeneous and heterogeneous effects. The CATE. Causal forests.
 * 15:00-16:00: Break
 * 16:00-17:00: Variable selection. LASSO methods for causal inference.
