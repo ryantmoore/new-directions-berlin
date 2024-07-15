@@ -470,6 +470,8 @@ _Two Cultures_, [@breiman01-two]
 - Regression/Decision trees
 - Random forests
 
+\vspace{5mm}
+
 @jamwithas21
 
 ## Cross-validation
@@ -487,6 +489,7 @@ $k$-fold cross-validation to select method
 >- Calculate test error as average of the $k$ MSE's: \pause 
 
 $$CV_{(k)} = \frac{1}{k} \sum\limits_{i=1}^k \text{MSE}_i$$
+\pause 
 
 >- Select model that minimises $CV_{(k)}$
 
@@ -494,8 +497,6 @@ $$CV_{(k)} = \frac{1}{k} \sum\limits_{i=1}^k \text{MSE}_i$$
 ## CV for Linear Model
 
 ```{r}
-library(tidyverse)
-
 ## Make data
 
 mk_data <- function(n = 90, n_folds = 10){
@@ -1121,7 +1122,7 @@ mean(cf_preds)
 
 \Large
 
-A doubly-robust ATE:
+A doubly-robust ATE from training sample:
 
 ```{r}
 average_treatment_effect(cf_out)
