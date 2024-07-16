@@ -413,11 +413,13 @@ data(jobcorps)
 * $X2$: employment in Q4 after assg
 * $A2$: employment in Q just before outcome
 
+\pause 
+
 ```{r}
 # Formula: Y ~ X1 | A1 | X2 | A2
 
-tm_form <- exhealth30 ~ schobef + trainyrbef + jobeverbef | 
-  treat | emplq4 + emplq4full | work2year2q
+tm_form <- exhealth30 ~ schobef + trainyrbef + 
+  jobeverbef | treat | emplq4 + emplq4full | work2year2q
 
 tm_out <- telescope_match(tm_form, data = jobcorps, verbose = FALSE)
 ```
@@ -1506,12 +1508,102 @@ estimates of parents on children are reasonable.
 
 Packages
 
-- @framarduo13: `konfound`
-- @keele22: `rbounds`
 - `sensitivitymw`
 - `sensitivitymv`
+- @framarduo13: `konfound`
+- @keele22: `rbounds`
 
-## Example
+
+## Implementation in `sensitivitymw`
+
+\large
+
+```{r warning = FALSE, message=FALSE}
+library(Matching)
+data(GerberGreenImai)
+
+# Estimate Propensity Score
+pscore.glm <- glm(PHN.C1 ~ PERSONS + VOTE96.1 +
+                    NEW + MAJORPTY + AGE + WARD +
+                    PERSONS:VOTE96.1 + PERSONS:NEW +
+                    AGE2, family = binomial(logit),
+                  data = GerberGreenImai)
+```
+
+***
+
+```{r warning = FALSE}
+hist(pscore.glm$fitted)
+```
+
+
+## Implementation in `sensitivitymw`
+
+```{r warning = FALSE}
+# Match - without replacement
+
+set.seed(758456581)
+
+m.obj <- Match(Y = GerberGreenImai$VOTED98,
+               Tr = GerberGreenImai$PHN.C1,
+               X = fitted(pscore.glm), M = 1, replace = FALSE)
+
+summary(m.obj)
+```
+
+
+## Implementation in `sensitivitymw`
+
+```{r}
+#| label: sensmwpkg
+#| eval: true
+
+library(sensitivitymw)
+
+df_matched <- cbind(
+  GerberGreenImai$VOTED98[m.obj$index.treated], 
+  GerberGreenImai$VOTED98[m.obj$index.control])
+
+df_matched |> head()
+```
+
+## Implementation in `sensitivitymw`
+
+```{r}
+#| label: sensmw
+#| eval: true
+
+gammas <- seq(1, 1.3, by = 0.03)
+ps <- vector("numeric", length(gammas))
+
+for(idx in 1:length(gammas)){
+  ps[idx] <- senmw(df_matched, gamma = gammas[idx])$pval}
+
+rbind(gammas, ps) |> round(2)
+```
+
+
+## Implementation in `sensitivitymw`
+
+```{r}
+data("mercury")
+head(mercury)
+```
+
+## Implementation in `sensitivitymw`
+
+```{r}
+gammas <- seq(10, 20, by = 1)
+ps <- vector("numeric", length(gammas))
+
+for(idx in 1:length(gammas)){
+  ps[idx] <- senmw(mercury, gamma = gammas[idx])$pval}
+
+rbind(gammas, ps) |> round(2)
+```
+
+
+## Implementation in `konfound`
 
 ```{r}
 anes <- read_csv("../data/anes_pilot_2016.csv")
@@ -1595,57 +1687,6 @@ summary(lm_out)
 konfound(lm_out, pid_rep)
 ```
 
-
-## Implementation in `rbounds`
-
-\large
-
-```{r warning = FALSE, message=FALSE}
-library(Matching)
-data(GerberGreenImai)
-
-# Estimate Propensity Score
-pscore.glm <- glm(PHN.C1 ~ PERSONS + VOTE96.1 +
-                    NEW + MAJORPTY + AGE + WARD +
-                    PERSONS:VOTE96.1 + PERSONS:NEW +
-                    AGE2, family = binomial(logit),
-                  data = GerberGreenImai)
-```
-
-***
-
-```{r warning = FALSE}
-hist(pscore.glm$fitted)
-```
-
-
-## Implementation in `rbounds`
-
-```{r warning = FALSE}
-# Match - without replacement
-m.obj <- Match(Y = GerberGreenImai$VOTED98,
-               Tr = GerberGreenImai$PHN.C1,
-               X = fitted(pscore.glm), M = 1, replace = FALSE)
-
-summary(m.obj)
-```
-
-
-## Implementation in `rbounds`
-
-```{r}
-#| eval: true
-library(rbounds)
-
-# Sensitivity Test
-# binarysens(m.obj, Gamma = 2, GammaInc = .1)
-```
-
-## Implementation in `rbounds`
-
-```{r}
-#hlsens(m.obj, Gamma = 5, GammaInc = 1)
-```
 
 
 ***
