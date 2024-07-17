@@ -182,7 +182,7 @@ The Baseline
 
 The Policy Change: Significant Shock
 
-![](figs/03-KCfig1b.jpg){height=90%}
+![](figs/03-KCfig1b.jpg){height=85%}
 
 
 ## Example: Effect of Minimum Wage on Employment
@@ -456,6 +456,15 @@ DiDiD Estimate:
 
 
 ## The Stepped Wedge Design
+
+\large
+
+>- NMAAHC experiment
+>- All 2000 members of DC MPD sworn force
+>- Gradually, month by month, discuss history of race and policing in DC and US, guided tour of exhibits, lunch, free time in museum
+>- Start with all untreated
+>- Over $\approx$ 1.5-2 years, treat all officers
+>- Measure admin data (use of force, etc.) and three waves of survey
 
 ## Calloway-Sant'anna Approach: Multiple Time Periods
 
